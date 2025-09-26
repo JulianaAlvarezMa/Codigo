@@ -1,0 +1,63 @@
+Ajustes:
+
+Archivo-> fomrat-table.js
+
+limpiarTabla(idTabla) {
+        const $tabla = $(idTabla).DataTable ? $(idTabla).DataTable() : null;
+
+        if ($tabla) {
+            $tabla.clear().draw();
+        } else {
+            $(`${idTabla} tbody`).empty();
+        }
+    }
+
+
+
+Archivo-> events.js (Reemplazar el evento)
+
+$(document).on('change', '#codter', function () {
+            const codter = $(this).val(); 
+            grupo.FiltrarProductosProveedor(codter);
+        });
+
+
+
+Archivo-> grupos.js (Reemplazar la funcion)
+
+FiltrarProductosProveedor(codter) {
+    this.controler = 'Combos/';
+    return this.controlador('BRProductosPorProveedor', { propro_b: codter }, 'GET')
+        .then((r) => {
+            const { response, data } = r;
+
+            // Construir listado de productos
+            this.productos = response
+                ? [{ value: '', text: 'Seleccione...' }, ...data.map(item => ({
+                    value: item.codigo_producto,
+                    text: item.codigo_producto + ' - ' + item.nombre_producto,
+                    params: item
+                }))] 
+                : [{ value: '', text: 'Seleccione...' }];
+
+            const $select = $('#codpro');
+            if ($select.length > 0) {
+                // Limpiar opciones anteriores
+                $select.empty();
+                // Cargar nuevas opciones
+                this.productos.forEach(opt => {
+                    $select.append(`<option value="${opt.value}">${opt.text}</option>`);
+                });
+
+                $select.val('');
+                $select.trigger('chosen:updated');
+            }
+
+            // Limpia la tabla cada vez que cambie de proveedor
+            const formatTable = new FormatTable();
+            formatTable.limpiarTabla('#datatable-productos'); 
+        })
+        .catch(() => {
+            console.error('Error al obtener los productos');
+        });
+    }
