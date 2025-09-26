@@ -1,6 +1,6 @@
 Ajustes:
 
-Archivo-> fomrat-table.js
+Archivo-> fomrat-table.js (Agregar)
 
 limpiarTabla(idTabla) {
         const $tabla = $(idTabla).DataTable ? $(idTabla).DataTable() : null;
