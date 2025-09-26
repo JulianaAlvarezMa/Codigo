@@ -23,7 +23,7 @@ $(document).on('change', '#codter', function () {
 
 
 
-Archivo-> grupos.js (Reemplazar la funcion)
+Archivo-> grupos.js (Reemplazar las funciones)
 
 FiltrarProductosProveedor(codter) {
     this.controler = 'Combos/';
@@ -61,3 +61,85 @@ FiltrarProductosProveedor(codter) {
             console.error('Error al obtener los productos');
         });
     }
+
+
+CalculoGrupos(selector){
+            const tabla = $(selector).DataTable();
+            const todasFilas = [];
+            let errores = [];
+            tabla.rows({ page: 'all' }).every(function () {
+            const rowNode = $(this.node());
+            const filaCompleta = {};
+
+            rowNode.find('td').each(function () {
+                const id = $(this).attr('id');
+                if (!id) return;
+                
+                let valor = '';
+
+                const input = $(this).find('input');
+                if (input.length > 0) {
+                    valor = input.first().val().trim();
+                    
+                    if (id === 'cantidad') {
+                        const cantidad = parseFloat(valor.replace(/\./g, '').replace(',', '.'));
+                        if (isNaN(cantidad) || cantidad <= 0) {
+                            const cod = rowNode.find('#producto').text().trim() || 'Producto sin código';
+                            errores.push(`Cantidad inválida para el producto ${cod}`);
+                            input.addClass('is-invalid');
+                            input.attr('title', 'Debe ser un valor numérico mayor a cero');
+                        } else {
+                            input.removeClass('is-invalid');
+                            input.removeAttr('title');
+                        }
+                    }
+                    
+                }
+                
+                const select = $(this).find('select');
+                if (select.length > 0) {
+
+                    valor = select.first().val();
+                    if (select.attr('required') && (!valor || valor === '')) {
+                        const cod = rowNode.find('#producto').text().trim() || 'Producto sin código';
+                        errores.push(`Debe seleccionar una opción en el campo "${id}" para el producto ${cod}`);
+                        select.addClass('is-invalid');
+                        select.attr('title', 'Este campo es obligatorio');
+                    } else {
+                        select.removeClass('is-invalid');
+                        select.removeAttr('title');
+                    }
+
+                } 
+
+                if (select.length == 0  &&  input.length==0)  {
+                    valor = $(this).text().trim();  
+                }
+
+                const limpio = valor.toString().replace(/\$/g, '')
+                    .replace(/\s/g, '')
+                    .replace(/\./g, '')
+                    .replace(',', '.');
+
+                if (/^[\d\.\-]+$/.test(limpio)) {
+                    const num = parseFloat(limpio);
+                    valor = isNaN(num) ? valor : num;
+                }
+
+                filaCompleta[id] = valor;
+            });
+
+            if (Object.keys(filaCompleta).length > 0) {
+                todasFilas.push(filaCompleta);
+            }
+        });
+
+        if (todasFilas.length === 0) {
+            errores.push(`No se han seleccionado productos`);
+        }
+
+        this.productosSeleccionados = todasFilas;
+        const response = errores.length === 0;
+        return { productos: todasFilas, response, message: errores };
+
+        }
