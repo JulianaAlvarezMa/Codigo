@@ -1,101 +1,85 @@
-//Events.js:
-$(document)
-    .off('blur', '#valida_fecha_llegada_minima,#valida_fecha_llegada_maxima')
-    .on('blur', '#valida_fecha_llegada_minima, #valida_fecha_llegada_maxima', function (e) {
-        if (!e.originalEvent?.isTrusted) {
-            return;
-        }
-        const destino = e.relatedTarget;
-        if (destino && $(destino).closest('.chosen-container').length) {
-            return;
-        }
+//grupos.js
+ActualizarCantidadesOrde
 
-        const $form = $(this).closest('#orden-compra');
+ActualizarCantidadesOrden(cantidad_actualizada, data, element, idTabla) {
+    console.log("data", data);
 
-        const fecha_llegada_minima = $form.find('#valida_fecha_llegada_minima').val();
-        const fecha_llegada_maxima = $form.find('#valida_fecha_llegada_maxima').val();
+    const form = new FormFormat();
+    const tabla = $(element).closest('table');
+    const fila = $(element).closest('tr');
 
-        if (fecha_llegada_minima && fecha_llegada_maxima) {
-            const form = new FormFormat();
-            const validarFecha = form.validarFecha(fecha_llegada_minima, fecha_llegada_maxima);
+    const costoUnitario = parseFloat(data.costo.replace(/[^0-9,]/g, '').replace(',', '.'));
+    const factor = parseFloat((data.fact_conversion || '1').toString().replace(/\./g, '').replace(',', '.'));
+    const descripcion = data.descripcion;
+    const producto = parseFloat((data.producto || '').toString().replace(/\./g, '').replace(',', '.'));
+    const cant_sugerida = parseFloat(((cantidad_actualizada) || '0').toString().replace(/\./g, '').replace(',', '.'));
+    const cantidadNumerica = parseFloat(cantidad_actualizada.toString().replace(/\./g, '').replace(',', '.'));
+    const cantSugeridaNum  = parseFloat(data.cant_sugerida.toString().replace(/\./g, '').replace(',', '.'));
 
-            if (!validarFecha) {
-                swal("Error", "La fecha mínima de llegada no puede ser mayor a la fecha máxima de llegada.", "error");
-                $form.find('#fecha_llegada_minima').val("");
-                return false;
+    // Solo validar sugerida si es la tabla específica
+    
+    if (!isNaN(data.cant_sugerida)) {
+        if (idTabla === "datatable-ordenSugerida") {
+            if ( cantidadNumerica !== cantSugeridaNum) {
+                console.log("La cantidad sugerida es numérica y diferente a la cantidad.");
+                fila.find("td#tipo_concepto_detalle select").attr("required", true);
+                fila.find("td#tipo_concepto_detalle select").attr("disabled", false);
+                fila.find("td#tipo_concepto_detalle select").val('').trigger('chosen:updated');
+                fila.find("#tipo_orden_detalle").text("MANUAL");
+            } else {
+                fila.find("td#tipo_concepto_detalle select").attr("required", false);
+                fila.find("td#tipo_concepto_detalle select").attr("disabled", true);
+
+                fila.find("td#tipo_concepto_detalle select").val('').trigger('chosen:updated');
+                fila.find("#tipo_orden_detalle").text("SUGERIDO");
             }
         }
-    });
-
-
-
-
-$(document).on('change', '#fecha_llegada_minima', function (e) {
-            const $form = $(this).closest('#orden-compra');
-            const fecha_llegada_minima = $form.find('#fecha_llegada_minima').val();
-            const fecha_llegada_maxima = $form.find('#fecha_llegada_maxima').val();
-            const estado = $("#estcom_b").val(); 
-            // console.log(idtercero);
-            orden.AplicarObservacionNueva(fecha_llegada_minima,estado);
-           
-            console.log("Cambio detectado en fechas:", fecha_llegada_minima, fecha_llegada_maxima);
-
-            if (fecha_llegada_minima && fecha_llegada_maxima) {
-                const form = new FormFormat();
-                const validarFecha = form.validarFecha(fecha_llegada_minima, fecha_llegada_maxima);
-
-                if (!validarFecha) {
-                    swal("Error","La fecha mínima de llegada no puede ser mayor a la fecha máxima de llegada.","error");
-                    $form.find('#fecha_llegada_minima').val("");
-                    return false;
-                }
-            }
-        });
-
-//tercero.js: 
-
-AplicarObservacionNueva(fecha_minima_nueva, estado) {
-    // console.log('AplicarObservacionNueva', fecha_minima_nueva, estado);
-
-    const $form = $('#orden-compra'); // Asegura contexto
-    const $observacionExistente = $form.find('#observacion');
-
-    if (estado === 'EN TRANSITO') {
-        if ($observacionExistente.length === 0) {
-            const form = new FormFormat();
-            const $inputObservacion = $(form.agregarInput({
-                id: 'observacion',
-                name: 'observacion',
-                placeholder: 'Motivo de Reprogramación',
-                required: true,
-                classDivName: 'col-lg-6 col-md-6 col-sm-12 col-md-12',
-                conContenedor: true,
-                conLabel: true,
-            })).hide();
-
-            const $campo = $form.find('#num_factura').closest('.form-group');
-            $inputObservacion.insertAfter($campo).slideDown(300);
-        }
-    } else {
-        if ($observacionExistente.length) {
-            $observacionExistente.closest('.form-group').slideUp(300, function () {
-                $(this).remove();
-            });
-        }
+    }else{
+        console.log("NO ES SUGERIDO");
     }
 
-    
+    // Validación general de cantidad
+    if (isNaN(cantidadNumerica) || isNaN(costoUnitario) || cantidadNumerica <= 0) {
+        swal("Error", "La cantidad solicitada debe ser un número mayor a cero.", "warning");
+        fila.find("#cantidad_solicitada").val(cant_sugerida !== '0' ? cant_sugerida : '0');
+    } else {
+        fila.find('#cantidad_solicitada').val(cantidadNumerica);
+    }
+
+    // Calcular total
+    console.log("descripcion")
+    console.log(descripcion)
+    const total = cantidadNumerica * costoUnitario;
+    console.log("aca 1.2")
+    const cajasCalculadas = this.calcularCajas(cantidadNumerica, factor, descripcion);
+
+    fila.find('#cajas').text(cajasCalculadas);
+    fila.find('#valor_total').text(form.formatMoney(total, 0));
+
+    // Recalcular totales de la orden
+    const Orden = this.CalculosOrdenCompra('#' + idTabla);
+    const totalOrden = Orden.productos.reduce((acc, fila) => {
+        const valor = parseFloat(fila.valor_total);
+        return acc + (isNaN(valor) ? 0 : valor);
+    }, 0);
+
+    this.calculosTotalesOrdenCompra(totalOrden, form);
 }
 
-//events.js: 
+
+
+
+events.js
+
 $(document).on('change', '#tercero_id', function (e) {
             e.preventDefault();
             const proveedor = $(this).val(); 
             orden.ProductosProveedor(proveedor);
         });
 
-//tercero.js: 
-ProductosProveedor(idproveedor) {
+
+tercero.js
+ ProductosProveedor(idproveedor) {
         const subProveedores = this.subProveedores.filter(item => item.idtercero === idproveedor);
         const productos_proveedor = this.optionProducto.filter(item => item.params && item.params.tercero_id === idproveedor.toString());
 
@@ -181,71 +165,3 @@ ProductosProveedor(idproveedor) {
             form.formatSelect();
         });
     }
-
-//BR:
-
-public function CompraMesTercero(){
-    try {
-      // parent::$_conexion->debug = true;
-      $daq = new ordenCompraDAQ(parent::$_conexion); 
-      $id_tercero = isset(parent::$_datosPeticion["id_tercero"]) ? parent::getParam("id_tercero") : '';
-
-
-        
-      $row = $daq->DAQConsultarComprasMesProveedor($id_tercero);
-      if ($row && $row->rowCount() > 0) {
-        $data=$row->GetRows();
-        $row->close();
-      } else {
-        throw new Exception("No existe información de compras realizadas este mes.");
-      }
-      
-      $response["data"]= $data;
-      $response["response"] = true;
-      parent::showResponse($response, 200);
-    } catch (Exception $e) {
-      $db_e = ADODB_Pear_Error();
-      if ($db_e) {
-        throw new Exception($db_e->message);
-      }
-      $response["response"] = false;
-      $response["message"] = $e->getMessage();
-      parent::showResponse($response, 200);
-    }
-  }
-
-//DAQ:
- public function DAQConsultarComprasMesProveedor($idproveedor)
-  {
-    $p1 = $this->cadenaConexion->Param('idproveedor');
-
-    $sql="SELECT
-            t.id AS id,
-            t.codter_b AS codter_b,
-            t.nomlarg_b AS nomter_b,
-            t.valmin_orden AS valor_minimo,
-            t.val_convenio AS valor_convenio,	
-            IFNULL(SUM(f.valfac_b),0) AS valor_total_compras
-            FROM tercero t
-            LEFT JOIN factcoms f ON f.tercero_id=t.id
-            AND f.fecfac_b BETWEEN DATE_FORMAT('2025-01-29', '%Y-%m-01') AND LAST_DAY(CURDATE()) -- cambiar fecha a curdate()
-            WHERE t.estter_b='ACTIVO'
-            AND t.id=$p1
-            GROUP BY t.id;";
-    $bindVars = array($idproveedor); 
-
-    $result = $this->cadenaConexion->execute($sql , $bindVars);
-    return $result;
-  }
-
-
-
-
-events.js:
-// botón para volver al formulario de filtros
-        $(document).on('click', '#btn-volver', function () {
-            $('.card-form').show('slide', { direction: 'up' }, 500);
-            $('.card-table').hide('slide', { direction: 'up' }, 500);
-            $('.title-orden').text('Orden de Compras')
-        });
-
