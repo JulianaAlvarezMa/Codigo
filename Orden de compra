@@ -1,1175 +1,933 @@
-OrdenCompraManual() {
-        try {
-        this.formfiltros.tipo=='realizados';
-        let html = '';
-        let formulario = [];
-            
-        let format = '';
-        const form = new FormFormat();
+public function ConsultarAvanceVenta()
+	{
+		  parent::$_conexion->debug = true;	
+		try {
+			$daq = new ReportesDAQ(self::$_conexion);
+			$date = new Date();
+			// $usuario = isset(parent::$_datosPeticion["codemp_b"]) ? parent::getParam("codemp_b") : "";
+			$fechaInicial = isset(parent::$_datosPeticion["fechaInicial"]) ? parent::getParam("fechaInicial") : "";
+			$fechaFinal = isset(parent::$_datosPeticion["fechaFinal"]) ? parent::getParam("fechaFinal") : "";
+			$sede = isset(parent::$_datosPeticion["sede"]) ? parent::getParam("sede") : "";
+			$bodega = isset(parent::$_datosPeticion["bodega"]) ? parent::getParam("bodega") : "";
+			$casa = isset(parent::$_datosPeticion["casa"]) ? parent::getParam("casa") : "";
+			$tipo_venta = isset(parent::$_datosPeticion["tipo_venta"]) ? parent::getParam("tipo_venta") : "";
+			$jefev = isset(parent::$_datosPeticion["jefev"]) ? parent::getParam("jefev") : "";
+			$cargo = parent::$_dataUser["caremp_b"];
+			$usuario = parent::$_dataUser["codemp_b"];
+			$periodo = date('Y-m', strtotime($fechaInicial));
+		
 
-        formulario = [
-            form.agregarInput({ id: "estcom_b", name: "estcom_b", type: 'hidden', placeholder: 'Estado Compra', value:'EN TRANSITO' , required: false, classDivName: '', disabled: true, conContenedor: false, conLabel: false }),
-            form.agregarInput({ id: "tipo_orden", name: "tipo_orden", type: 'hidden', placeholder: 'tipo orden', value: 'MANUAL', required: false, classDivName: '', disabled: true, conContenedor: false, conLabel: false }),
+			if ($cargo == "131") {
+				$tipo_usuario = "jefe_ventas";
+				$usuario_valor = $usuario; // Código del jefe de ventas
 
-            form.agregarInput({ id: "id_compra", name: "id_compra", type: 'hidden', placeholder: 'Código Orden', value: '', required: false, classDivName: '', disabled: true, conContenedor: false, conLabel: false }),
+			} elseif ($cargo == "97") {
+				$tipo_usuario = "proveedor";
+				$usuario_valor = $casa; // Código del proveedor
 
-            form.agregarSelect({ id: 'sede', name: 'sede', options:  this.sedes, placeholder: 'Sedes', required: true, classDivName: 'col-lg-4 col-md-4 col-sm-12 col-md-12 ', selectedValue: '', conContenedor: true, conLabel: true, accion: false, disabled: false }),
-            form.agregarSelect({ id: 'tercero_id', name: 'tercero_id', options:  this.proveedores, placeholder: 'Proveedor', required: true, classDivName: 'col-lg-4 col-md-4 col-sm-12 col-md-12 ', selectedValue: '', conContenedor: true, conLabel: true, accion: false, disabled: false }),
-            
-            form.agregarInput({ id: "valida_fecha_llegada_minima", name: "fecha_llegada_minima", type: 'text', placeholder: 'Fecha min. Llegada', value: '', required: true, classInput:'datepicker validarFechas', classDivName: 'col-lg-4 col-md-4 col-sm-12 col-md-12', disabled: false, conContenedor: true, conLabel: true }),
-            form.agregarInput({ id: "valida_fecha_llegada_maxima", name: "fecha_llegada_maxima", type: 'text', placeholder: 'Fecha max. Llegada', value: '', required: true, classInput:'datepicker validarFechas', classDivName: 'col-lg-4 col-md-4 col-sm-12 col-md-12', disabled: false, conContenedor: true, conLabel: true }),
-            
-            form.agregarInput({ id: "orden_min_compra", name: "orden_min_compra", type: 'text', placeholder: 'Minimo Compra', value: form.formatMoney(0), required: false, classDivName: 'col-lg-2 col-md-2 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true }),
-            form.agregarInput({ id: "convenio_mensual", name: "convenio_mensual", type: 'text', placeholder: 'Convenio Mensual', value: form.formatMoney(0), required: false, classDivName: 'col-lg-2 col-md-2 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true }),
-            form.agregarInput({ id: "compra_mes", name: "compra_mes", type: 'text', placeholder: 'Comprado Mes', value: form.formatMoney(0), required: false, classDivName: 'col-lg-2 col-md-2 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true }),
-            form.agregarSelect({ id: 'tipo_concepto', name: 'tipo_concepto', options: this.causales_observacion_orden, placeholder: 'Causal de Orden Manual', required: true, classDivName: 'col-lg-12 col-md-12 col-sm-12 col-md-12',  conContenedor: true, conLabel: true, accion: false, disabled: false }),
-            form.agregarSelect({ id: 'productos', name: 'productos', options: [], placeholder: 'Productos', required: false, classDivName: 'col-lg-12 col-md-12 col-sm-12 col-md-12',  conContenedor: true, conLabel: true, accion: false, disabled: false })
-        ];
-        format = form.agregarForm({ action: '', id: 'orden-compra', method: 'POST', elements: formulario, className: 'row w-95 mx-auto orden-manual-form', enctype: '', autocomplete: 'on', novalidate: false });
-        html = `
-                    <div class="row">
-                        ${format}
-                        
-                        <div class="table-responsive mx-auto" width="95%" style="width:95%">
-                            <h4 class="text-left font-weight-bold font-italic">Productos a solicitar</h4>
-                            <hr class="my-1">
+			} else {
+				$tipo_usuario = "general";
+				$usuario_valor = null; // No aplica
+			}
 
-                            <table id="datatable-orden" class="table table-striped table-no-bordered table-hover" cellspacing="0" width="100%" style="width:100%">
-                            <thead></thead>
-                            <tbody></tbody>
-                            <tfoot></tfoot>
-                            </table>
-                            </div>
-                        </div>   
-                    </div>
-                    <div class="row totales"></div>
-                `;
-        $(".modal-body").html(html);
-        const formatTable = new FormatTable();
-         const columnas = ['Código'
-                        , 'Descripción'
-                        , 'Fac. Conversión'
-                        , 'Causal'
-                        , 'Cantidad'
-                        , 'Cant. Modificada'
-                        , 'Cajas'
-                        , 'Valor Unidad'
-                        , 'Valor Total'
-                        , 'Tipo Orden'
-                        , 'Acciones'
-                    ];
-        let thead = formatTable.agregarHeadTable(columnas);
-        let valor_total_general = 0;
-        let diferencia_convenio_total = 0;
-        let diferencia_min_compra_total = 0;
+			$html = "";
+			$params = array();
+			$params['fechaInicial'] = $fechaInicial;
+			$params['fechaFinal'] = $fechaFinal;
+			$params['periodo'] = $periodo;
+			$params['tipo_usuario']  = $tipo_usuario;
+			$params['usuario_valor'] = $usuario_valor;
+			$params['casa'] = $casa;
+			$params['bodega'] = $bodega;
+			$params['tipo_venta'] = $tipo_venta;
 
+			$paramsr2 = array();
+			$paramsr2['fecha_inicial'] = $fechaInicial;
+			$paramsr2['fecha_final'] = $fechaFinal;
+			$dias_habiles_mes = parent::BRConsultarDiasHabiles($paramsr2);
+			
+			
+			if ($cargo == '97'){
+				if (empty($casa || $sede)){
+					$response["message"] = "Debe seleccionar su casa.";
+					$response["response"] = false;
+					parent::showResponse($response, 200);	
+				} else{
+					$row =$daq->DAReporteAvanceVenta($params);
+				}
+			}else{
+				$row =$daq->DAReporteAvanceVenta($params);
+			}
+			
+			
+			// $avanceVentas    = $row["avance_ventas"];
+			$cediNorte       = $row["cedi_norte"];
+			$totalCediNorte  = $row["total_cedi_norte"];
+			$cediSur         = $row["cedi_sur"];
+			$totalCediSur    = $row["total_cedi_sur"];
+			$totalSedes      = $row["total_sedes"];
+			$dataCredito     = $row["data_credito"];
+			$detallado       = $row["detallado"];
+			$granTotal       = $row["gran_total"];
+			
+			print("rowwwwww");
+			print_r($row);
+			
+			$html = "
+				<style>
+					@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,800;0,900;1,800&display=swap');
+					
+					* {
+						margin: 0;
+						padding: 0;
+						box-sizing: border-box;
+					}
+
+					body {
+						margin: 0;
+						padding: 0;
+						width: 100%;
+						overflow-x: hidden; /* Evita scroll horizontal no deseado */
+					}
+					.responsive-table-container {
+						overflow-x: auto; 
+						-webkit-overflow-scrolling: touch; 
+						width: 100%; 
+						margin-bottom: 20px;						
+					}
+
+					.responsive-table-container thead th {
+						position: sticky;
+						top: 0;
+						z-index: 10;
+					}
+
+	
+					.titulo-reporte-container {
+						text-align: center;
+						padding: 15px;
+						// margin-bottom: 20px;
+						// font-size: 18px;
+						// background: #12284b;
+						background: #02457A;
+						// background: #26415e;
+						width: 100%;
+						box-sizing: border-box;
+					}
+					.titulo-reporte {
+						font-family: 'Montserrat', sans-serif;
+						color: #D6E8EE;
+						// color: #e0c58f;
+						font-size: 28px;
+						text-align: center;
+						padding: 12px 20px; 
+						letter-spacing: 0.5px;
+						font-weight: 800;
+      					font-style: normal;
+					}
+						  
+					.subtitulo-reporte {
+						font-family: 'Montserrat', sans-serif;
+						font-size: 20px;
+						color: #e0c58f;
+						font-weight: 400;
+					}
+					
+					.titulo-tabla {
+						font-family: 'Montserrat', sans-serif;
+						color: #02457A;
+						font-size: 16px;
+						font-weight: 700;
+						font-style: normal;
+						margin-left: 5px;
+					}
+					.total-label{
+						background: #02457A !important;
+						color: #D6E8EE !important;
+						font-weight: 400 !important;
+						font-size: 13px !important; 
+						// border-top: 2px solid #e0c58f; 
+					}
+								
+					table.reporte {
+					 	table-layout:auto;   
+						// width: max-content; 
+						width: 100%; 
+						border-collapse: collapse;
+						font-family: 'Montserrat', sans-serif;
+						font-size: 12px;              
+						background: #ffffff;
+						// border: 1px solid #d9cbc2;
+						margin-bottom: 18px;
+						// margin: 0 15px;	
+					}
+
+					table.reporte th {
+						font-family: 'Montserrat', sans-serif;
+						background: #02457A;
+						padding:8px 6px;
+						white-space:normal;
+						color: #ffffffff;
+						// color: #e0c58f;
+						border-left: 1px solid #d9cbc2;
+						border-right: 1px solid #d9cbc2;
+						white-space: normal; 
+						// border: none;
+						font-size:13px;   
+						font-weight:500;
+						text-align: center;
+						vertical-align: middle;
+					}
+						
+					table.reporte td {
+						padding: 6px;
+						white-space:nowrap;
+						text-align: center;
+						color: #333;
+						// border: none;
+						border-left: 1px solid #d9cbc2;
+						border-right: 1px solid #d9cbc2;
+    					// border-bottom: 0.5px solid #f0f0f0;
+						font-size:12px       
+					}
+
+					table.report tr:nth-child(even) {
+						background: #f7f9fc;
+					}
+
+					table.reporte tr:hover {
+						background: #e6eefc;
+						transition: 0.15s;
+					}
+					// .fila-total td {
+					// 	background: #023859 !important;
+					// 	color: #e0c58f !important;
+						// color: #e0c58f !important;
+					// 	font-weight: 400 !important;
+					// 	font-size: 13px !important; 
+					// 	border-top: 2px solid #e0c58f; 
+					// }
+					.fila-total .total-label {
+						text-align: center !important; 
+					}
+					.align-left {
+						text-align: left !important;
+					}
+					.align-right {
+						text-align: right !important;
+					}
+					.align-center {
+						text-align: center !important;
+					}
+
+					.contenedor-scroll {
+						width: 100%;
+						// border: 1px solid #ccc;
+						margin-bottom: 20px;
+					}
+
+					/* ENCABEZADO FIJO */
+					.contenedor-scroll thead th {
+						position: sticky;
+						top: 0;
+						z-index: 10;
+					}
+
+
+					.moneda {
+						font-weight: 500;
+						font-size:13px
+						color: #000000ff;
+						
+
+					}
+					.porcentaje {
+						// text-align: right !important;
+						color: #000000ff;
+						font-size:13px
+					}
+
+					.numero {
+						color: #000000ff;
+						font-size:13px
+					}
+				</style>
+			"; 
+
+			$html .= "<div class='responsive-table-container'>";
+
+			// Bloque del título gris (antes iba en thead)
+			$html .= "<div class='titulo-reporte-container'>";
+			$html .= "<strong class='titulo-reporte'>Avance En Ventas - " . ucfirst($tipo_venta) . "</strong><br>";
+			$html .= "<span class='subtitulo-reporte'>Periodo: " . $fechaInicial . " a " . $fechaFinal . "</span><br>";
+			$html .= "<span class='subtitulo-reporte'>Días Hábiles: " . $dias_habiles_mes . "</span>";
+			// $html .= "(Días Hábiles: " . $dias_habiles_mes . ")";
+			$html .= "</div>";
+			
+			switch ($tipo_venta) {
+
+				
+				/*INICIO  CASE TOTALES */
+				
+				/* =======================================================
+				*   TOTALES
+				* ======================================================= */
+				case "totales":
+					
+
+					$headers = [
+						'Sede', 'Nombre Sede', 'Catalogo', 'Venta Bruta', 'Venta Neta', 'Venta Promedio x Dia',
+						'Iva Venta', 'Descuento Venta', 'Drop Size', 'Devolución', '% Devolución', 'Pedidos', 'P.P', 
+						'Días Laborados', 'Universo	Clientes', 'Impactos', '% Actividad'
+					];
+					$tipos = [
+						'Sede' => 'texto',
+						'Nombre Sede' => 'texto',
+						'Catalogo' => 'texto',
+						'Venta Bruta' => 'moneda',
+						'Venta Neta' => 'moneda',
+						'Venta Promedio x Dia' => 'moneda',
+						'Iva Venta' => 'moneda',
+						'Descuento Venta' => 'moneda',
+						'Drop Size' => 'moneda',
+						'Devolución' => 'moneda',
+						'% Devolución' => 'porcentaje',
+						'Pedidos' => 'numero',
+						'P.P' => 'numero',
+						'Días Laborados' => 'numero',
+						'Universo Clientes' => 'numero',
+						'Impactos' => 'numero',
+						'% Actividad' => 'porcentaje'
+					];
+
+					$tablas = [
+						"cedi_norte" => $cediNorte,
+						"total_cedi_norte" => $totalCediNorte,
+						"cedi_sur" => $cediSur,
+						"total_cedi_sur" => $totalCediSur,
+						"total_sedes" => $totalSedes,
+						"credito" => $dataCredito
+					];
+
+
+					foreach ($tablas as $rows) {
+							foreach ($rows as $fila) {
+								foreach ($fila as $valor) {
+									if ($valor !== null && $valor !== '') {
+										$hayDatos = true;
+										break 3;
+									}
+								}
+							}
+						}
+
+						if (!$hayDatos) {
+							$response["message"] = "No existe información para los filtros seleccionados";
+							$response["response"] = false;
+							parent::showResponse($response, 200);
+							return;
+						}
+
+
+					$tablas_con_total = [];
+					$detalle_tablas = [];
+					foreach (array_keys($tablas) as $nombreTabla) {
+						if (strpos($nombreTabla, 'total_') === 0) {
+							$nombre_detalle = substr($nombreTabla, 6); 
+		
+							if (isset($tablas[$nombre_detalle]) && !empty($tablas[$nombre_detalle])) {
+								$tablas_con_total[$nombre_detalle] = $tablas[$nombreTabla][0];
+							}
+						}else {
+       						$detalle_tablas[] = $nombreTabla;
+						}
+					}
+
+					foreach ($tablas as $nombreTabla => $rows) {
+						if (strpos($nombreTabla, 'total_') === 0) {
+							 $nombre_detalle = substr($nombreTabla, 6); 
         
-        const renderBody = { data: [], className: 'text-center orden-compra' }
-        // const renderBody ={data:'',className:'text-center orden-suge'}
-        let body = formatTable.agregarBodyTable(renderBody);
-        const val_convenio = parseFloat(0?.toString().replace(',', '.')) || 0;
-        const val_minimo = parseFloat(0?.toString().replace(',', '.')) || 0;
-        const compra_mes = parseFloat(0?.toString().replace(',', '.')) || 0;
-        diferencia_convenio_total = (val_convenio - compra_mes - valor_total_general);
-        diferencia_min_compra_total = (val_minimo - valor_total_general);
-        const cumpleMinimoCompra = diferencia_min_compra_total > valor_total_general;
+							if (isset($tablas_con_total[$nombre_detalle])) {
+								continue; 
+							}
+						}
 
-        const filaTotal = `
-                    <div class="col-lg-7 col-md-7 col-sm-12"></div>
-                    <div id="totales" class="col-lg-4 col-md-4 col-sm-12">
-                        <div class="card ${cumpleMinimoCompra ? 'border-danger text-danger' : 'border-success text-success'} shadow p-3 my-1 cumple">
-                            <div class="d-flex justify-content-between mb-1">
-                                <strong>Valor Total Orden:</strong>
-                                <span id="total">${form.formatMoney(Math.max(valor_total_general, 0))}</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-1">
-                                <strong>Diferencia Convenio:</strong>
-                                <span id="diferencia_convenio">${form.formatMoney(Math.max(diferencia_convenio_total, 0))}</span>
-                            </div>
-                            <hr class="my-1">
-                            <div class="d-flex justify-content-between">
-                                <strong>Diferencia Min. Compra:</strong>
-                                <span id="diferencia_minimo_compra" class="${cumpleMinimoCompra ? 'font-weight-bold' : ''} cumple">${form.formatMoney(Math.max(diferencia_min_compra_total, 0))}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
+						$tablaVacia = true;
 
-        const modal = new ModalFormat('modal-orden-compra');
-        modal.setTitle('Orden De Compra Manual');
-        modal.modalFooter(
-            form.agregarButton({ id: 'generar-orden-compra', text: 'Guardar', type: 'button', className: 'btn btn-success', classDivName: '', accion: 'AGREGAR', conContenedor: true, icono: "save" })
-        );
+							foreach ($rows as $fila) {
+								foreach ($fila as $valor) {
+									if ($valor !== null && $valor !== '') {
+										$tablaVacia = false;
+										break 2; // romper ambos foreach
+									}
+								}
+							}
 
-        form.formatSelect();
-        form.formatInputDate();
-        modal.setSize('fullscreen');
-        modal.setClosable(false);
-        modal.toggle('open');
-        const adicional = { searching: true, paging: false, info: true };
-        formatTable.inicializarDataTable('#datatable-orden', adicional, body, thead, false, 'orden-manual-general');
-        $(".totales").html(filaTotal);
+							if ($tablaVacia) {
+								continue; // NO mostrar tabla
+							}
 
-        } catch (error) {
-            console.error('Error al crear el formulario de orden de compra manual:', error);
-            swal("Error", "No se pudo crear el formulario de orden de compra manual.", "error");
-            
-        }
-    }
+						// if (empty($rows)) {
+						// 	continue; // si está vacía no se muestra
+						// }
+						// if (empty(array_filter($rows, function($v) {
+						// 	return $v !== NULL && $v !== '';
+						// }))) {
+						// 	continue;
+						// }
+						// Título opcional por tabla
+						$html .= "<h3 class='titulo-tabla'>TABLA: ".strtoupper($nombreTabla)."</h3>";
+						
+						$html .= "<div class='contenedor-scroll' style='max-height:500px; overflow-y:auto; overflow-x:auto;'>";
+						$html .= "<table class='reporte'>";
+
+						// Encabezados
+						$html .= "<thead><tr>";
+						foreach ($headers as $h) {
+							$html .= "<th>{$h}</th>";
+						}
+						$html .= "</tr></thead>";
+
+						// Cuerpo
+						$html .= "<tbody>";
+						
+						$es_tabla_detalle = in_array($nombreTabla, $detalle_tablas);
+
+						foreach ($rows as $fila) {
+							if (!is_array($fila)) {
+							continue; 
+						}
+						
+						if (empty(array_filter($fila))) {
+							continue; 
+						}
+						// ----------------------------------------
+						
+						$row_class = $es_tabla_detalle ? '' : 'fila-total';
+						$html .= "<tr class='{$row_class}'>";
+						$is_first_column_data = true;
+							foreach ($fila as $key => $valor) {
+								
+								$tipo = $tipos[$key] ?? 'texto';
+								if (is_int($key)) {
+									continue;
+								}
+								if (!$es_tabla_detalle && $is_first_column_data) {
+									$html .= "<td class='total-label' colspan='3'><strong>TOTAL DE SEDES</strong></td>";
+									$is_first_column_data = false;
+									continue; 
+								} elseif (!$es_tabla_detalle && in_array($key, ['Nombre Sede', 'Catalogo'])) {
+									continue;
+								}
+								$is_first_column_data = false;
+								
+								// ...
+								
+								// --- FIN DE LA PRUEBA DE DEPURACIÓN ---
+								switch ($tipo) {
+									case 'moneda':
+										$valor_limpio = trim($valor);
+										$valor_limpio = preg_replace('/[^0-9.]/', '', $valor_limpio);
+										$valor = number_format((float)$valor_limpio, 2, ',', '.');
+               							$html .= "<td class='moneda'>$&nbsp;$valor</td>";
+										break;
+
+									// case 'decimal':
+									// 	$valor = number_format((float)$valor, 2, ',', '.');
+                					// 	$html .= "<td class='decimal'>{$valor}</td>";
+									// 	break;
+
+									case 'porcentaje':
+										  $valor = number_format((float)$valor, 2, ',', '.');
+                						$html .= "<td class='porcentaje'>{$valor}%</td>";
+										break;
+
+									case 'numero':
+										$valor = number_format((int)$valor, 0, ',', '.');
+                						$html .= "<td class='numero'>{$valor}</td>";
+									break;
+
+									default: // texto
+										// $clase_alineacion = in_array($key, ['Nombre Sede', 'Catalogo']) ? 'align-left' : 'align-center';
+										$html .= "<td>{$valor}</td>";
+										break;
+								}
+								
+							}
+							$html .= "</tr>";
+						}
+
+						if (isset($tablas_con_total[$nombreTabla])) {
+							$total_row = $tablas_con_total[$nombreTabla];
+							
+							$html .= "<tr class='fila-total'>"; 
+
+							$is_first_column = true;
+							foreach ($headers as $header_key) {
+								$valor = $total_row[$header_key] ?? '';
+    
+								// 2. Si está vacío, intenta la clave con tabulación (Universo\tClientes)
+								if (trim($valor) === '' || $valor === null) {
+									$valor = $total_row['Universo\tClientes'] ?? '';
+								}
+
+								$tipo = $tipos[$header_key] ?? 'texto';
+								$clase_alineacion = '';
+
+								if ($is_first_column && $tipo === 'texto') {
+									$html .= "<td class='total-label' colspan='3'><strong>TOTAL ".strtoupper($nombreTabla)."</strong></td>";
+									$is_first_column = false;
+									continue; 
+								} elseif (!$is_first_column && in_array($header_key, ['Nombre Sede', 'Catalogo'])) {
+									continue;
+								}
 
 
+								// Determinar la clase de alineación y el formato para los totales
+								switch ($tipo) {
+									case 'moneda':
+										$valor = number_format((float)$valor, 2, ',', '.');
+                						$html .= "<td class='moneda'>$&nbsp;$valor</td>";
+									break;
+									case 'porcentaje':
+										  $valor = number_format((float)$valor, 2, ',', '.');
+                						$html .= "<td class='porcentaje'>{$valor}%</td>";
+										break;
+
+									case 'numero':
+										$valor = number_format((int)$valor, 0, ',', '.');
+                						$html .= "<td class='numero'>{$valor}</td>";
+									break;
+
+									case 'decimal':
+										$valor = number_format((float)$valor, 2, ',', '.');
+										$html .= "<td class='{$clase_alineacion} total-data {$tipo}'>{$valor}</td>";
+										break;
+
+									
+									default: 
+										$html .= "<td>{$valor}</td>";
+                                        break;
+								}
+							}
+							$html .= "</tr>";
+						}
+						
+						$html .= "</tbody></table><br>";
+						$html .= "</div>";
+					}		
+							
+										
+				break;	
 
 
+				/* =======================================================
+				*   CONSOLIDADO
+				* ======================================================= */
+				case "consolidado":
+						
+					$headersConsolidados = [
+						'Nombre Grupo', 'Formador', 'Venta Bruta', 'Venta Neta', 'Venta Promedio x Dia',
+						'Iva Venta', 'Descuento Venta', 'Drop Size', 'Devolución', '% Devolución', 'Pedidos', 'P.P', 
+						'Días Laborados', 'Universo	Clientes', 'Impactos', '% Actividad'
+					];
+					
+					$headersTotales = [
+						'Sede', 'Nombre Sede', 'Catalogo', 'Venta Bruta', 'Venta Neta', 'Venta Promedio x Dia',
+						'IVA Venta', 'Descuento Venta', 'Drop Size', 'Devolución', '% Devolución', 'Pedidos', 'P.P', 
+						'Días Laborados', 'Universo	Clientes', 'Impactos', '% Actividad'
+					];
+					$tipos = [
+						'Nombre Grupo' => 'texto',
+						'Formador' => 'texto',
+						'Sede' => 'texto',
+						'Nombre Sede' => 'texto',
+						'Catalogo' => 'texto',
+						'Venta Bruta' => 'moneda',
+						'Venta Neta' => 'moneda',
+						'Venta Promedio x Dia' => 'moneda',
+						'Iva Venta' => 'moneda',
+						'Descuento Venta' => 'moneda',
+						'Drop Size' => 'moneda',
+						'Devolución' => 'moneda',
+						'% Devolución' => 'porcentaje',
+						'Pedidos' => 'numero',
+						'P.P' => 'numero',
+						'Días Laborados' => 'numero',
+						'Universo Clientes' => 'numero',
+						'Impactos' => 'decimal',
+						'% Actividad' => 'porcentaje'
+					];
+					$tablas = [
+						// "Avance ventas" => $avanceVentas,
+						"cedi_norte" => $cediNorte,
+						"total_cedi_norte" => $totalCediNorte,
+						"cedi_sur" => $cediSur,
+						"total_cedi_sur" => $totalCediSur,
+						"total_sedes" => $totalSedes,
+						"credito" => $dataCredito
+					];
 
-        // guardar orden de compra sugerida o editar orden de compra realizada
-$(document).on('click', '#generar-orden-compra', function (e) {
-            e.preventDefault();
-            const accion = $(this).data('accion'); 
-            orden.GenerarOrdenCompra(accion, 'procesarCRUDCompra');
-        });
+					foreach ($tablas as $rows) {
+							foreach ($rows as $fila) {
+								foreach ($fila as $valor) {
+									if ($valor !== null && $valor !== '') {
+										$hayDatos = true;
+										break 3;
+									}
+								}
+							}
+						}
 
+						if (!$hayDatos) {
+							$response["message"] = "No existe información para los filtros seleccionados";
+							$response["response"] = false;
+							parent::showResponse($response, 200);
+							return;
+						}
 
+					
+					$tablas_con_total = [];
+					$detalle_tablas = [];
+					foreach (array_keys($tablas) as $nombreTabla) {
+						if (strpos($nombreTabla, 'total_') === 0) {
+							$nombre_detalle = substr($nombreTabla, 6); 
+		
+							if (isset($tablas[$nombre_detalle]) && !empty($tablas[$nombre_detalle])) {
+								$tablas_con_total[$nombre_detalle] = $tablas[$nombreTabla][0];
+							}
+						}else {
+	   							 $detalle_tablas[] = $nombreTabla;
+						}
+					}
 
-    GenerarOrdenCompra(accion, controlador) {
-        const form = new FormFormat();
-        const convenio = $('#convenio_mensual');
-        console.log("convenio")
-        console.log(convenio)
-        const tipo = this.formfiltros.tipo;
-        const idform = tipo === 'sugeridos' ? "#orden-sugerida" : "#orden-compra";
-        const idtabla = tipo === 'sugeridos' ? '#datatable-ordenSugerida' : '#datatable-orden';
-        const parseCurrency = (selector) =>
-            parseFloat($(selector).text().replace(/[^0-9,]/g, '').replace(',', '.')).toFixed(2);
-        const data_form = {
-            ...form.getFormData(idform),
-            accion,
-            valortotal: parseCurrency("#total"),
-            Diferencia_Convenio: parseCurrency("#diferencia_convenio"),
-            Diferencia_Min_Compra: parseCurrency("#diferencia_minimo_compra"),
-        };
-        const Orden = this.CalculosOrdenCompra(idtabla);
-        console.log("Orden", Orden);
-        if (!Orden.response) {
-            swal("Atención", Orden.message.join('<br>'), "warning");
-            return;
-        }
+					foreach ($tablas as $nombreTabla => $rows) {
+						if (strpos($nombreTabla, 'total_') === 0) {
+							 $nombre_detalle = substr($nombreTabla, 6); 
         
-        const validaOrden= form.validarFormulario(idform);
-        if (!validaOrden.valido) {
-            return;
-        }
-
-  
-        data_form.productos = Orden.productos;
-        this.validarSemana({ fechaActual: new Date() }).then(({ mensaje, semana, esValido }) => {
-            const continuar = () => {
-                this.controlador(controlador, data_form, 'POST')
-                    .then((r) => {
-                        const { response, message, data } = r;
-                        console.log(data);
-                        if (response) {
-                            const modal = new ModalFormat('modal-orden-compra');
-                            modal.toggle('close');
-
-                            console.log("data.sugerida");
-                            console.log(data.sugerida);
-
-                            let sugerida = data.sugerida;
-
-                            if (!Array.isArray(sugerida)) {
-                                sugerida = Object.values(sugerida);
-                            }
-
-                            swal("¡ Orden de compra guardada con exito!", message, "success");
-                            if (Array.isArray(sugerida) && sugerida.length > 0) {
-                                data.sugerida = sugerida;
-                                this.procesarDataSugerida(data);
-                            } else {
-                                // this.consultarOrdenCompra('consultarOrdenCompra', this.filtros);
-                            }
-
-
-                        } else {
-                            swal("Error", message, "error");
-                            return false;
-                        }
-                    })
-                    .catch((e) => {
-                        console.error('Error al guardar la orden', e);
-                        swal("Ocurrió un error inesperado. Por favor intenta nuevamente.");
-                    });
-            };
-            if (esValido) { // no valida convenio solo saca la alerta diciendo la diferencia y los mensajes de semana (Es la penúltima semana del mes, Es la última semana del mes.)
-                const alerta = new SwalForm();
-                alerta.mostrarAlertaConfirmar({
-                    title: '¿Estás seguro?',
-                    text: `${mensaje}\n Aún falta ${$("#diferencia_convenio").text()} para cumplir el convenio mensual. ¿Deseas continuar?`,
-                    type: 'warning',
-                    confirmText: 'Sí, continuar',
-                    cancelText: 'No, cancelar'
-                }).then(confirmado => {
-                    if (confirmado) continuar();
-                    else console.log("❌ Cancelado por el usuario.");
-                });
-            } else {
-                continuar();
-            }
-        });
-    }
-
-
-
-
-procesarDataSugerida(data) {
-        console.log("procesarDataSugeridaaaaaa ");
-        const alerta = new SwalForm();
-        alerta.mostrarAlertaConfirmar({
-            title: '!Atención!',
-            text: `Modificaste tu orden de compra, ¿deseas crear otra orden de compra con estas cantidades?`,
-            type: 'warning',
-            confirmText: 'Sí, generar',
-            cancelText: 'No, No lo haré'
-        }).then(confirmado => {
-            
-            if (confirmado) {
-                console.log("procesarDataSugeridaaaaaa entra???");
-                console.log("entraaaaa");
-                console.log(data);
-                let formulario = [];
-                const form = new FormFormat();
-                const productos_proveedor = this.optionProducto.filter(item => item.params && item.params.tercero_id === data.peticion.tercero_id.toString());
-                console.log("productossdss_proveedor")
-                console.log(productos_proveedor)
-
-
-                const datos = {
-                    idOrden: '',
-                    idProveedor: data.peticion.tercero_id || '',
-                    proveedor: data.peticion.nombre || '',
-                    idSubproveedor: data.peticion.tercero_siesa_id || '',
-                    subproveedor: data.peticion.Nombre_Subproveedor || '',
-                    sede: data.peticion.sede || '',
-                    fecha_llegada_minima: data.peticion.fecha_llegada_minima || '',
-                    fecha_llegada_maxima: data.peticion.fecha_llegada_maxima || '',
-                    estado: 'EN TRANSITO',
-                    tipo_orden: 'MANUAL',
-                    productos: productos_proveedor,
-                    convenio: data.peticion.convenio_mensual || '',
-                    compra_mes: data.peticion.compra_mes || '',
-                    orden_min_compra: data.peticion.orden_min_compra || '',
-                };
-                formulario = [
-                    form.agregarInput({ id: "sede", name: "sede", type: 'hidden', placeholder: 'Sede', value: datos.sede, required: false, classDivName: '', disabled: false, conContenedor: false, conLabel: false }),
-                    form.agregarInput({ id: "tipo_orden", name: "tipo_orden", type: 'hidden', placeholder: 'Tipo Orden', value: datos.tipo_orden, required: false, classDivName: '', disabled: false, conContenedor: false, conLabel: false }),
-                    form.agregarInput({ id: "estcom_b", name: "estcom_b", type: 'hidden', placeholder: 'Estado Compra', value: datos.estado, required: false, classDivName: '', disabled: false, conContenedor: false, conLabel: false }),
-                    form.agregarInput({ id: "id_compra", name: "id_compra", type: 'hidden', placeholder: 'Código Orden', value: datos.idOrden, required: false, classDivName: '', disabled: true, conContenedor: false, conLabel: false }),
-
-                    form.agregarInput({ id: "tercero_id", name: "tercero_id", type: 'text', placeholder: 'Código Proveedor', value: datos.idProveedor, required: true, classDivName: 'col-lg-2 col-md-2 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true }),
-                    form.agregarInput({ id: 'nombre', name: 'nombre', type: 'text', placeholder: 'Nombre', value: datos.proveedor, required: false, classDivName: 'col-lg-4 col-md-4 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true }),
-                    form.agregarInput({ id: "tercero_siesa_id", name: "tercero_siesa_id", type: 'text', placeholder: 'Código Sub-Proveedor', value: datos.idSubproveedor, required: false, classDivName: 'col-lg-2 col-md-2 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true }),
-                    form.agregarInput({ id: 'subproveddor', name: 'subproveddor', type: 'text', placeholder: 'Sub-Proveedor', value: datos.subproveedor, required: false, classDivName: 'col-lg-4 col-md-4 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true }),
-
-                    form.agregarInput({ id: "fecha_llegada_minima", name: "fecha_llegada_minima", type: 'text', placeholder: 'Fecha min. Llegada', value: datos.fecha_llegada_minima, required: false, classDivName: 'col-lg-3 col-md-3 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true }),
-                    form.agregarInput({ id: "fecha_llegada_maxima", name: "fecha_llegada_maxima", type: 'text', placeholder: 'Fecha max. Llegada', value: datos.fecha_llegada_maxima, required: false, classDivName: 'col-lg-3 col-md-3 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true }),
-                    form.agregarInput({ id: "orden_min_compra", name: "orden_min_compra", type: 'text', placeholder: 'Minimo Compra', value: form.formatMoney(datos.orden_min_compra), required: false, classDivName: 'col-lg-2 col-md-2 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true }),
-                    form.agregarInput({ id: "compra_mes", name: "compra_mes", type: 'text', placeholder: 'Total comprado este mes', value: form.formatMoney(datos.compra_mes), required: false, classDivName: 'col-lg-2 col-md-2 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true }),
-                    form.agregarInput({ id: "convenio_mensual", name: "convenio_mensual", type: 'text', placeholder: 'Convenio Mensual', value: form.formatMoney(datos.convenio), required: false, classDivName: 'col-lg-2 col-md-2 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true }),
-                    form.agregarSelect({ id: 'productos', name: 'productos', options: datos.productos, placeholder: 'Productos', required: false, classDivName: 'col-lg-10 col-md-10 col-sm-12 col-md-12 mx-auto', value: '', conContenedor: true, conLabel: true, accion: false, disabled: false }),
-                ];
-
-                const format = form.agregarForm({ action: '', id: 'orden-compra', method: 'POST', elements: formulario, className: 'row w-95 mx-auto', enctype: '', autocomplete: 'on', novalidate: false });
-
-
-                const htmlSugerido = `
-                                <div class="row">
-                                    ${format}
-                                    <div class="table-responsive mx-auto" width="95%" style="width:95%">
-                                        <h4>Productos a solicitar</h4> 
-                                        <table id="datatable-orden" class="table table-striped table-no-bordered table-hover" cellspacing="0" width="100%" style="width:100%">
-                                        <thead></thead>
-                                        <tbody></tbody>
-                                        <tfoot></tfoot>
-                                        </table>
-                                        </div>
-                                    </div>   
-                                </div>
-                                <div class="row totales"></div>
-                            `;
-                console.log("htmlSugerido");
-                console.log(htmlSugerido);
-
-                const formatTable = new FormatTable();
-                const columnas = [
-                    'Código'
-                    , 'Descripción'
-                    , 'Fac. Conversión'
-                    , 'Causal'
-                    , 'Cantidad'
-                    , 'Cant. Modificada'
-                    , 'Cajas'
-                    , 'Valor Unidad'
-                    , 'Valor Total'
-                    , 'Tipo Orden'
-                    , 'Acciones'
-                ];
-                let thead = formatTable.agregarHeadTable(columnas);
-                console.log(thead);
-                console.log("thead");
-                let valor_total_general = 0;
-                let diferencia_convenio_total = 0;
-                let diferencia_min_compra_total = 0;
-                const dataTable = data.sugerida.map(({
-                    producto,
-                    descripcion,
-                    fact_conversion,
-                    diferencia,
-                    costo,
-                }) => {
-                    // Convertir diferencia en valor absoluto
-                    const diferenciaVal = Math.abs(parseFloat(diferencia?.toString().replace(',', '.')) || 0);
-                    const costoVal = parseFloat(costo?.toString().replace(',', '.')) || 0;
-                    console.log(diferenciaVal);
-                    console.log("diferenciaVal");
-
-
-                    const val_total = costoVal * diferenciaVal;
-                    console.log("aca 1.3")
-                    const cajas_calculo = this.calcularCajas(diferenciaVal, fact_conversion , producto);
-                    valor_total_general += val_total;
-
-                    return {
-                        producto,
-                        descripcion,
-                        fact_conversion: form.formatNumber(fact_conversion, 0),
-                        tipo_concepto_detalle: form.agregarSelect({
-                            id: 'tipo_concepto_detalle',
-                            name: 'tipo_concepto_detalle',
-                            options: this.causales_observacion_producto,
-                            placeholder: '',
-                            required: true,
-                            classDivName: '',
-                            conContenedor: false,
-                            conLabel: false
-                        }),
-                        cantidad_orden: form.formatNumber(diferenciaVal),
-                        cantidad: form.agregarInput({
-                            id: "cantidad_solicitada",
-                            name: "cantidad_solicitada",
-                            classInput: 'cantidad_solicitada',
-                            type: 'number',
-                            placeholder: 'Cant. Modificada',
-                            value: diferenciaVal,
-                            required: true,
-                            classDivName: '',
-                            disabled: false,
-                            conContenedor: false,
-                            conLabel: false
-                        }),
-                        cajas: cajas_calculo,
-                        costo: form.formatMoney(costo,0),
-                        valor_total: form.formatMoney(val_total, 0),
-                        tipo_orden_detalle: 'MANUAL',
-                        acciones: `
-                                    <a href="#" id="orden-borrar-${producto}"  
-                                        data-table="${producto}" 
-                                        rel="tooltip" data-placement="top" 
-                                        class="btn btn-simple btn-danger btn-icon borrar-celda" 
-                                        title='Eliminar Producto'>
-                                        <i class="material-icons">indeterminate_check_box</i>
-                                    </a>`
-                    };
-                });
-
-                let body = formatTable.agregarBodyTable({ data: dataTable, className: 'text-center orden-compra' });
-                const val_convenio = parseFloat(datos.convenio?.toString().replace(',', '.')) || 0;
-                const val_minimo = parseFloat(datos.orden_min_compra?.toString().replace(',', '.')) || 0;
-                const compra_mes = parseFloat(datos.compra_mes?.toString().replace(',', '.')) || 0;
-                diferencia_convenio_total = (val_convenio - compra_mes - valor_total_general);
-                diferencia_min_compra_total = (val_minimo - valor_total_general);
-                const cumpleMinimoCompra = diferencia_min_compra_total > valor_total_general;
-
-                console.log(body);
-                console.log("body");
-
-
-                const filaTotal = `
-                                <div class="col-lg-7 col-md-7 col-sm-12"></div>
-                                <div id="totales" class="col-lg-4 col-md-4 col-sm-12">
-                                    <div class="card ${cumpleMinimoCompra ? 'border-danger text-danger' : 'border-success text-success'} shadow p-3 my-1 cumple">
-                                        <div class="d-flex justify-content-between mb-1">
-                                            <strong>Valor Total Orden:</strong>
-                                            <span id="total">${form.formatMoney(Math.max(valor_total_general, 0))}</span>
-                                        </div>
-                                        <div class="d-flex justify-content-between mb-1">
-                                            <strong>Diferencia Convenio:</strong>
-                                            <span id="diferencia_convenio">${form.formatMoney(Math.max(diferencia_convenio_total, 0))}</span>
-                                        </div>
-                                        <hr class="my-1">
-                                        <div class="d-flex justify-content-between">
-                                            <strong>Diferencia Min. Compra:</strong>
-                                            <span id="diferencia_minimo_compra" class="${cumpleMinimoCompra ? 'font-weight-bold' : ''} cumple">${form.formatMoney(Math.max(diferencia_min_compra_total, 0))}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                `;
-
-
-
-
-
-
-
-
-
-
-                const modal = new ModalFormat('modal-orden-compra');
-                modal.setTitle('Orden De Compra Sugerida');
-                modal.modalFooter(
-                    form.agregarButton({ id: 'generar-orden-compra', text: 'Guardar', type: 'button', className: 'btn btn-success', classDivName: '', accion: 'AGREGAR', conContenedor: true, icono: "save" })
-                );
-
-
-
-                modal.setSize('fullscreen');
-                modal.setClosable(false);
-                modal.toggle('open');
-                console.log(filaTotal);
-                console.log("filaTotal");
-                $(".modal-body").html(htmlSugerido);
-                $(".totales").html(filaTotal);
-                form.formatSelect();
-                
-                const adicional = { searching: true, paging: false, info: true };
-                formatTable.inicializarDataTable('#datatable-orden', adicional, body, thead, false);
-
-
-
-
-
-            }
-
-            else {
-                this.consultarOrdenCompra('consultarOrdenCompra', this.filtros);
-                console.log("❌ Cancelado por el usuario.");
-            }
-        });
-
-
-
-    }
-
-
-
-
-
-
-
-
-AnularOrden(data) {
-        const alerta = new SwalForm();
-        alerta.mostrarAlertaConfirmar({
-            title: '¿Estás seguro?',
-            text: `¿Quieres anular la orden de compra # ${data['id']}. a ${data["proveedor"]}?`,
-            type: 'warning',
-            confirmText: 'Sí, anular',
-            cancelText: 'No, cancelar'
-        }).then(confirmado => {
-            if (confirmado) {
-                const form = new FormFormat();
-                const formulario = [
-                    form.agregarInput({ id: "id_compra", name: "id_compra", type: 'hidden', placeholder: 'id tercero interno', value: data['id'], required: true, classDivName: '', disabled: false, conContenedor: false, conLabel: false }),
-                    form.agregarInput({ id: "estcom_b", name: "estcom_b", type: 'hidden', placeholder: 'Estado Compra interno', value: 'ANULADO', required: true, classDivName: '', disabled: false, conContenedor: false, conLabel: false }),
-                    form.agregarInput({ id: 'observacion', name: 'observacion', type: 'text', placeholder: 'Observación de Inactivación', value: '', required: true, classDivName: 'col-lg-10 col-md-10 col-sm-12 col-md-12 mx-auto', disabled: false, conContenedor: true, conLabel: true }),
-                ];
-                let format = form.agregarForm({ action: '', id: 'form-obsevacion-inactivacion', method: 'POST', elements: formulario, className: 'row', enctype: '', autocomplete: 'on' });
-
-                alerta.mostrarFormularioSwal({
-                    titulo: "Agregar Observación",
-                    formulario: format,
-                    formId: "form-obsevacion-inactivacion",
-                    form: form
-                }).then((respuesta) => {
-                    if (!respuesta || respuesta.dismiss === 'cancel') {
-                        return;
-                    }
-
-                    const valida = form.validarFormulario("#form-obsevacion-inactivacion");
-                    if (!valida.valido) {
-                        return;
-                    }
-                    this.controlador('AnularOrdenCompra', respuesta, 'POST')
-                        .then((r) => {
-                            const { response, message } = r;
-                            if (response) {
-                                swal("Anulado", message, "success");
-                                this.consultarOrdenCompra('consultarOrdenCompra', this.filtros);
-
-                            } else {
-                                swal("Error", message, "error");
-                            }
-                        })
-                        .catch((e) => {
-                            console.error('Error al anular la orden', e);
-                            swal("Error", "Ocurrió un error en la anulación", "error");
-                        });
-                });
-            }
-        });
-    }
-
-
-
-    DomOrdenCompra(controler, _data = {}) {
-        try{  
-        this.controler = 'ordenCompra/';
-        this.controlador(controler, this.formfiltros, 'POST')
-            .then((r) => {
-                const { response, message, data } = r;
-                if (response) {
-                    let htmlSugerido = '';
-                    let formulario = [];
-                    let format = '';
-                    let tipo = 'EDICION';
-                    const form = new FormFormat();
-                    const productos_proveedor = this.optionProducto.filter(item => item.params && item.params.tercero_id === _data.idproveedor.toString());
-                    const dataOrden = data.filter(item => item.id == _data.id);
-                    const primerItem = dataOrden[0] || {};
-                    console.log("dataOrden", dataOrden)
-                    // console.log(primerItem['tipo_concepto'])
-                    console.log("primerItem['tipo_concepto_detalle']")
-                    console.log(primerItem['tipo_concepto_detalle'])
-                    console.log("primerItem['tipo_concepto']")
-                    console.log(primerItem['tipo_concepto'])
-                    const datos = {
-                        idOrden: primerItem['id'] || '',
-                        tipo_concepto_detalle : primerItem['tipo_concepto_detalle '] || '',
-                        tipo_concepto : primerItem['tipo_concepto'] || '',
-                        idProveedor: primerItem['Proveedor'] || '',
-                        proveedor: primerItem['Nombre Proveedor'] || '',
-                        idSubproveedor: primerItem['Subproveedor'] || '',
-                        subproveedor: primerItem['Nombre Subproveedor'] || '',
-                        fecha_llegada_minima: primerItem['fecha_llegada_minima'] || '',
-                        fecha_llegada_maxima: primerItem['fecha_llegada_maxima'] || '',
-                        novedad: primerItem['novedad'] || '',
-                        estado: primerItem['estado'] || '',
-                        tipo_orden: this.formfiltros.tipo,
-                        sede: this.formfiltros.sede,
-                        convenio: primerItem['Valor Convenio'] || '',
-                        minimo_compra: primerItem['Valor Minimo Compra'] || '',
-                        compra_mes: primerItem['valor_total_compras'] || '',
-                        num_factura: primerItem['num_factura'] || '',
-                    };
-
-                    console.log("datos.sede SIIIII LLLEGA ")
-                    console.log(datos.tipo_concepto)
-
-
-                    const esTransito = datos.estado === 'EN TRANSITO';
-
-
-                    formulario = [
-                        form.agregarInput({
-                            id: "sede", name: "sede", type: 'hidden', placeholder: 'Sede', value: datos.sede, required: false, classDivName: '', disabled: false, conContenedor: false, conLabel: false
-                        }),
-                        form.agregarInput({
-                            id: "tercero_siesa_id", name: "tercero_siesa_id", type: 'hidden', placeholder: 'Código Sub-Proveedor', value: datos.idSubproveedor, required: false, classDivName: '', disabled: false, conContenedor: false, conLabel: false
-                        }),
-                        form.agregarInput({
-                            id: "tercero_id", name: "tercero_id", type: 'hidden', placeholder: 'Código Proveedor', value: datos.idProveedor, required: true, classDivName: '', disabled: true, conContenedor: false, conLabel: false
-                        }), 
-                        form.agregarInput({
-                            id: "id_compra", name: "id_compra", type: 'text', placeholder: 'Código Orden', value: datos.idOrden, required: false, classDivName: 'col-lg-2 col-md-2 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true
-                        }),
-                        form.agregarInput({
-                            id: "nombre", name: "nombre", type: 'text', placeholder: 'Nombre', value: datos.proveedor, required: false, classDivName: 'col-lg-4 col-md-4 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true
-                        }),
-                        form.agregarInput({
-                            id: "estcom_b", name: "estcom_b", type: 'text', placeholder: 'Estado Orden', value: datos.estado, required: true, classDivName: 'col-lg-2 col-md-2 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true
-                        }),
-                        form.agregarInput({
-                            id: "fecha_llegada_minima", name: "fecha_llegada_minima", type: 'text', placeholder: 'Fecha min. Llegada', value: datos.fecha_llegada_minima, required: false, classInput:'datepicker validar_edicion', classDivName: 'col-lg-2 col-md-2 col-sm-12 col-md-12 ', disabled: (!esTransito ? true: false ), conContenedor: true, conLabel: true
-                        }),
-                        form.agregarInput({
-                            id: "fecha_llegada_maxima", name: "fecha_llegada_maxima", type: 'text', placeholder: 'Fecha max. Llegada', value: datos.fecha_llegada_maxima, required: false, classDivName: 'col-lg-2 col-md-2 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true
-                            // id: "fecha_llegada_maxima", name: "fecha_llegada_maxima", type: 'text', placeholder: 'Fecha max. Llegada', value: datos.fecha_llegada_maxima, required: false, classDivName: 'col-lg-2 col-md-2 col-sm-12 col-md-12', disabled: (!esTransito ? true: false ), conContenedor: true, conLabel: true
-                        }),
-
-                        form.agregarInput({
-                            id: "orden_min_compra", name: "orden_min_compra", type: 'text', placeholder: 'Minimo Compra', value: form.formatMoney(datos.minimo_compra), required: false, classDivName: 'col-lg-4 col-md-4 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true
-                        }),
-                        form.agregarInput({
-                            id: "compra_mes", name: "compra_mes", type: 'text', placeholder: 'Total comprado este mes', value: form.formatMoney(datos.compra_mes), required: false, classDivName: 'col-lg-4 col-md-4 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true
-                        }),
-                        form.agregarInput({
-                            id: "convenio_mensual", name: "convenio_mensual", type: 'text', placeholder: 'Convenio Mensual', value: form.formatMoney(datos.convenio), required: false, classDivName: 'col-lg-4 col-md-4 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true
-                        }),
-
-                        esTransito ? 
-                        form.agregarInput({
-                            id: "num_factura",
-                            name: "num_factura",
-                            type: 'text',
-                            placeholder: 'Número Factura Compra',
-                            value: datos.num_factura,
-                            required: false,
-                            classDivName: 'form-group has-primary col-lg-6 col-md-6 col-sm-12',
-                            disabled: false,
-                            conContenedor: true,
-                            conLabel: true,
-                            classInput: 'form-control input-sm text-primary font-weight-bold'
-                        })
-                        
-                        : '',
-                        form.agregarSelect({
-                            id: 'tipo_concepto', name: 'tipo_concepto', selectedValue: datos.tipo_concepto , options: this.causales_observacion_orden, placeholder: 'Tipo Causal 2', required: false, classDivName: 'col-lg-12 col-md-12 col-sm-12 col-md-12', conContenedor: true, conLabel: true, accion: false, disabled: false
-                        }),
-                        form.agregarSelect({
-                            id: 'productos', name: 'productos', options: productos_proveedor, placeholder: 'Productos', required: false, classDivName: 'col-lg-12 col-md-12 col-sm-12 col-md-12', value: '', conContenedor: true, conLabel: true, accion: false, disabled: false
-                        }),
-                    ];
-                    format = form.agregarForm({ action: '', id: 'orden-compra', method: 'POST', elements: formulario, className: 'row w-95 mx-auto', enctype: '', autocomplete: 'on', novalidate: false });
-                    htmlSugerido = `
-                    <div class="row">
-                        ${format}
-                        <div class="table-responsive mx-auto" width="95%" style="width:95%">
-                            <h4>Productos a solicitar</h4> 
-                            <table id="datatable-orden" class="table table-striped table-no-bordered table-hover" cellspacing="0" width="100%" style="width:100%">
-                            <thead></thead>
-                            <tbody></tbody>
-                            <tfoot></tfoot>
-                            </table>
-                            </div>
-                        </div>   
-                    </div>
-                    <div class="row totales"></div>
-                `;
-                    $(".modal-body").html(htmlSugerido);
-                
-                    const formatTable = new FormatTable();
-                    const columnas = ['Código'
-                        , 'Descripción'
-                        , 'Fac. Conversión'
-                        , 'Causal'
-                        , 'Cantidad'
-                        , 'Cant. Modificada'
-                        , 'Cajas'
-                        , 'Valor Unidad'
-                        , 'Valor Total'
-                        , 'Tipo Orden'
-                        , 'Acciones'
-                    ];
-                    form.formatInputDate();
-                    let thead = formatTable.agregarHeadTable(columnas);
-                    let valor_total_general = 0;
-                    let diferencia_convenio_total = 0;
-                    let diferencia_min_compra_total = 0;
-                    const dataTable = dataOrden.map(({
-                        ['id_producto']: codigo,
-                        ['nombre_producto']: producto,
-                        ['factor_conversion']: fact_conversion,
-                        ['cantidad']: cantidad,
-                        ['cajas']: cajas,
-                        ['costo_und']: costo,
-                        ['Valor Total']: valor_total,
-                        ['tipo_orden_detalle']: tipo_orden_detalle,
-                        ['tipo_concepto_detalle']:tipo_concepto_detalle
-                    }) => {
-                        const val_total = parseFloat(valor_total?.toString().replace(',', '.')) || 0;
-                        console.log("aca 1.1")
-                        const cajas_calculo = this.calcularModificacion(parseFloat(cajas?.toString().replace(',', '.')) || 0, fact_conversion);
-
-                        valor_total_general += val_total;
-                        return {
-                            producto: codigo,
-                            descripcion: producto,
-                            fact_conversion: form.formatNumber(fact_conversion, 0),
-                            tipo_concepto_detalle: form.agregarSelect({
-                                id: 'tipo_concepto_detalle',
-                                name: 'tipo_concepto_detalle',
-                                options: this.causales_observacion_producto,
-                                placeholder: '',
-                                selectedValue: tipo_concepto_detalle || '',
-                                required: true,
-                                disabled: true, // agrego esto para desahilitarlo
-                                classDivName: '',
-                                conContenedor: false,
-                                conLabel: false
-                            }),
-                            cantidad_orden: form.formatNumber(cantidad),
-                            cantidad: form.agregarInput({
-                                id: "cantidad_solicitada",
-                                name: "cantidad_solicitada",
-                                classInput: 'cantidad_solicitada',
-                                type: 'number',
-                                placeholder: 'Cant. Modificada',
-                                value: cantidad,
-                                required: true,
-                                classDivName: '',
-                                disabled: false,
-                                conContenedor: false,
-                                conLabel: false
-                            }),
-                            cajas: cajas || cajas_calculo,
-                            costo: form.formatMoney(costo, 0),
-                            valor_total: form.formatMoney(val_total, 0),
-                            tipo_orden_detalle: tipo_orden_detalle,
-                            acciones: `
-                        <a href="#" id="orden-borrar-${codigo}"  
-                            data-table="${codigo}" 
-                            rel="tooltip" data-placement="top" 
-                            class="btn btn-simple btn-danger btn-icon borrar-celda" 
-                            title='Eliminar Producto'>
-                            <i class="material-icons">indeterminate_check_box</i>
-                        </a>`
-                        };
-                    });
-                    const renderBody = { data: dataTable, className: 'text-center orden-compra' }
-                    let body = formatTable.agregarBodyTable(renderBody);
-                    const val_convenio = parseFloat(datos.convenio?.toString().replace(',', '.')) || 0;
-                    const val_minimo = parseFloat(datos.minimo_compra?.toString().replace(',', '.')) || 0;
-                    const compra_mes = parseFloat(datos.compra_mes?.toString().replace(',', '.')) || 0;
-                    diferencia_convenio_total = (val_convenio - compra_mes - valor_total_general);
-                    diferencia_min_compra_total = (val_minimo - valor_total_general);
-                    const cumpleMinimoCompra = diferencia_min_compra_total > valor_total_general;
-                    const filaTotal = `
-                <div class="col-lg-7 col-md-7 col-sm-12"></div>
-                <div id="totales" class="col-lg-4 col-md-4 col-sm-12">
-                    <div class="card ${cumpleMinimoCompra ? 'border-danger text-danger' : 'border-success text-success'} shadow p-3 my-1 cumple">
-                        <div class="d-flex justify-content-between mb-1">
-                            <strong>Valor Total Orden:</strong>
-                            <span id="total">${form.formatMoney(Math.max(valor_total_general, 0))}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-1">
-                            <strong>Diferencia Convenio:</strong>
-                            <span id="diferencia_convenio">${form.formatMoney(Math.max(diferencia_convenio_total, 0))}</span>
-                        </div>
-                        <hr class="my-1">
-                        <div class="d-flex justify-content-between">
-                            <strong>Diferencia Min. Compra:</strong>
-                            <span id="diferencia_minimo_compra" class="${cumpleMinimoCompra ? 'font-weight-bold' : ''} cumple">${form.formatMoney(Math.max(diferencia_min_compra_total, 0))}</span>
-                        </div>
-                    </div>
-                </div>
-                `;
-                    const modal = new ModalFormat('modal-orden-compra');
-                    modal.setTitle('Orden De Compra', datos.proveedor);
-                    modal.modalFooter(esTransito ?
-                        form.agregarButton({ id: 'generar-orden-compra', text: 'Guardar', type: 'button', className: 'btn btn-primary', classDivName: '', accion: 'EDITAR', conContenedor: true, icono: "save" })
-                    : '');
-                    
-                    modal.setSize('fullscreen');
-                    modal.setClosable(false);
-                    modal.toggle('open');
-                    const adicional = { searching: true, paging: false, info: true, };
-                    $(".totales").html(filaTotal);
-                    formatTable.inicializarDataTable('#datatable-orden', adicional, body, thead, false);
-                    form.formatSelect();
-                } else {
-                    swal("Error", message, "error");
-                    return false
-                }
-            })
-            .catch((e) => {
-                console.error('Error al consultar las sugeridas de compra', e);
-                swal(msgFail);
-            });
-
-            }catch{
-                console.error('Error al procesar la orden de compra', e);
-                swal("Error", "Ocurrió un error al procesar la orden de compra", "error");
-            
-        }
-    }
-
-    DomOrdenCompraConsulta(controler, _data = {}) {
-        try{  
-        this.controler = 'ordenCompra/';
-        this.controlador(controler, this.formfiltros, 'POST')
-            .then((r) => {
-                const { response, message, data } = r;
-                if (response) {
-                    let htmlSugerido = '';
-                    let formulario = [];
-                    let format = '';
-                    let tipo = 'EDICION';
-                    const form = new FormFormat();
-                    const productos_proveedor = this.optionProducto.filter(item => item.params && item.params.tercero_id === _data.idproveedor.toString());
-                    const dataOrden = data.filter(item => item.id == _data.id);
-                    const primerItem = dataOrden[0] || {};
-                    const datos = {
-                        idOrden: primerItem['id'] || '',
-                        tipo_concepto_detalle : primerItem['tipo_concepto_detalle '] || '',
-                        idProveedor: primerItem['Proveedor'] || '',
-                        proveedor: primerItem['Nombre Proveedor'] || '',
-                        idSubproveedor: primerItem['Subproveedor'] || '',
-                        subproveedor: primerItem['Nombre Subproveedor'] || '',
-                        fecha_llegada_minima: primerItem['fecha_llegada_minima'] || '',
-                        fecha_llegada_maxima: primerItem['fecha_llegada_maxima'] || '',
-                        novedad: primerItem['novedad'] || '',
-                        estado: primerItem['estado'] || '',
-                        tipo_orden: this.formfiltros.tipo,
-                        sede: this.formfiltros.sede,
-                        convenio: primerItem['Valor Convenio'] || '',
-                        minimo_compra: primerItem['Valor Minimo Compra'] || '',
-                        compra_mes: primerItem['valor_total_compras'] || '',
-                        num_factura: primerItem['num_factura'] || '',
-                    };
-
-
-                    const esTransito = datos.estado === 'EN TRANSITO';
-
-
-                    formulario = [
-                        form.agregarInput({
-                            id: "sede", name: "sede", type: 'hidden', placeholder: 'Sede', value: datos.sede, required: false, classDivName: '', disabled: false, conContenedor: false, conLabel: false
-                        }),
-                        form.agregarInput({
-                            id: "tercero_siesa_id", name: "tercero_siesa_id", type: 'hidden', placeholder: 'Código Sub-Proveedor', value: datos.idSubproveedor, required: false, classDivName: '', disabled: false, conContenedor: false, conLabel: false
-                        }),
-                        form.agregarInput({
-                            id: "tercero_id", name: "tercero_id", type: 'hidden', placeholder: 'Código Proveedor', value: datos.idProveedor, required: true, classDivName: '', disabled: true, conContenedor: false, conLabel: false
-                        }), 
-                        form.agregarInput({
-                            id: "id_compra", name: "id_compra", type: 'text', placeholder: 'Código Orden', value: datos.idOrden, required: false, classDivName: 'col-lg-2 col-md-2 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true
-                        }),
-                        form.agregarInput({
-                            id: "nombre", name: "nombre", type: 'text', placeholder: 'Nombre', value: datos.proveedor, required: false, classDivName: 'col-lg-4 col-md-4 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true
-                        }),
-                        form.agregarInput({
-                            id: "estcom_b", name: "estcom_b", type: 'text', placeholder: 'Estado Orden', value: datos.estado, required: true, classDivName: 'col-lg-2 col-md-2 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true
-                        }),
-                        form.agregarInput({
-                            id: "fecha_llegada_minima", name: "fecha_llegada_minima", type: 'text', placeholder: 'Fecha min. Llegada', value: datos.fecha_llegada_minima, required: false, classInput:'datepicker validar_edicion', classDivName: 'col-lg-2 col-md-2 col-sm-12 col-md-12 ', disabled: (!esTransito ? true: false ), conContenedor: true, conLabel: true
-                        }),
-                        form.agregarInput({
-                            id: "fecha_llegada_maxima", name: "fecha_llegada_maxima", type: 'text', placeholder: 'Fecha max. Llegada', value: datos.fecha_llegada_maxima, required: false, classDivName: 'col-lg-2 col-md-2 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true
-                            // id: "fecha_llegada_maxima", name: "fecha_llegada_maxima", type: 'text', placeholder: 'Fecha max. Llegada', value: datos.fecha_llegada_maxima, required: false, classDivName: 'col-lg-2 col-md-2 col-sm-12 col-md-12', disabled: (!esTransito ? true: false ), conContenedor: true, conLabel: true
-                        }),
-
-                        form.agregarInput({
-                            id: "orden_min_compra", name: "orden_min_compra", type: 'text', placeholder: 'Minimo Compra', value: form.formatMoney(datos.minimo_compra), required: false, classDivName: 'col-lg-4 col-md-4 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true
-                        }),
-                        form.agregarInput({
-                            id: "compra_mes", name: "compra_mes", type: 'text', placeholder: 'Total comprado este mes', value: form.formatMoney(datos.compra_mes), required: false, classDivName: 'col-lg-4 col-md-4 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true
-                        }),
-                        form.agregarInput({
-                            id: "convenio_mensual", name: "convenio_mensual", type: 'text', placeholder: 'Convenio Mensual', value: form.formatMoney(datos.convenio), required: false, classDivName: 'col-lg-4 col-md-4 col-sm-12 col-md-12', disabled: true, conContenedor: true, conLabel: true
-                        }),
-
-                        esTransito ? 
-                        form.agregarInput({
-                            id: "num_factura",
-                            name: "num_factura",
-                            type: 'text',
-                            placeholder: 'Número Factura Compra',
-                            value: datos.num_factura,
-                            required: false,
-                            classDivName: 'form-group has-primary col-lg-6 col-md-6 col-sm-12',
-                            disabled: false,
-                            conContenedor: true,
-                            conLabel: true,
-                            classInput: 'form-control input-sm text-primary font-weight-bold'
-                        })
-                        
-                        : '',
-                        form.agregarSelect({
-                            id: 'tipo_concepto_detalle', name: 'tipo_concepto_detalle', options: this.causales_observacion_producto, placeholder: 'Tipo Causal 1', required: false, classDivName: 'col-lg-12 col-md-12 col-sm-12 col-md-12', value: '', conContenedor: true, conLabel: true, accion: false, disabled: true
-                        }),
-                        form.agregarSelect({
-                            id: 'productos', name: 'productos', options: productos_proveedor, placeholder: 'Productos', required: false, classDivName: 'col-lg-12 col-md-12 col-sm-12 col-md-12', value: '', conContenedor: true, conLabel: true, accion: false, disabled: true
-                        }),
-                    ];
-                    format = form.agregarForm({ action: '', id: 'orden-compra', method: 'POST', elements: formulario, className: 'row w-95 mx-auto', enctype: '', autocomplete: 'on', novalidate: false });
-                    htmlSugerido = `
-                    <div class="row">
-                        ${format}
-                        <div class="table-responsive mx-auto" width="95%" style="width:95%">
-                            <h4>Productos a solicitar</h4> 
-                            <table id="datatable-orden" class="table table-striped table-no-bordered table-hover" cellspacing="0" width="100%" style="width:100%">
-                            <thead></thead>
-                            <tbody></tbody>
-                            <tfoot></tfoot>
-                            </table>
-                            </div>
-                        </div>   
-                    </div>
-                    <div class="row totales"></div>
-                `;
-                    $(".modal-body").html(htmlSugerido);
-                
-                    const formatTable = new FormatTable();
-                    const columnas = ['Código'
-                        , 'Descripción'
-                        , 'Fac. Conversión'
-                        , 'Causal'
-                        , 'Cantidad'
-                        , 'Cant. Modificada'
-                        , 'Cajas'
-                        , 'Valor Unidad'
-                        , 'Valor Total'
-                        , 'Tipo Orden'
-                        , 'Acciones'
-                    ];
-                    form.formatInputDate();
-                    let thead = formatTable.agregarHeadTable(columnas);
-                    let valor_total_general = 0;
-                    let diferencia_convenio_total = 0;
-                    let diferencia_min_compra_total = 0;
-                    const dataTable = dataOrden.map(({
-                        ['id_producto']: codigo,
-                        ['nombre_producto']: producto,
-                        ['factor_conversion']: fact_conversion,
-                        ['cantidad']: cantidad,
-                        ['cajas']: cajas,
-                        ['costo_und']: costo,
-                        ['Valor Total']: valor_total,
-                        ['tipo_orden_detalle']: tipo_orden_detalle,
-                        ['tipo_concepto_detalle']:tipo_concepto_detalle
-                    }) => {
-                        const val_total = parseFloat(valor_total?.toString().replace(',', '.')) || 0;
-                        console.log("aca 1.1")
-                        const cajas_calculo = this.calcularModificacion(parseFloat(cajas?.toString().replace(',', '.')) || 0, fact_conversion);
-                        valor_total_general += val_total;
-
-                        return {
-                            producto: codigo,
-                            descripcion: producto,
-                            fact_conversion: form.formatNumber(fact_conversion, 0),
-                            tipo_concepto_detalle: form.agregarSelect({
-                                id: 'tipo_concepto_detalle',
-                                name: 'tipo_concepto_detalle',
-                                options: this.causales_observacion_producto,
-                                placeholder: '',
-                                selectedValue: tipo_concepto_detalle || '',
-                                required: true,
-                                disabled: true, // agrego esto para desahilitarlo
-                                classDivName: '',
-                                conContenedor: false,
-                                conLabel: false
-                            }),
-                            cantidad_orden: form.formatNumber(cantidad),
-                            cantidad: form.agregarInput({
-                                id: "cantidad_solicitada",
-                                name: "cantidad_solicitada",
-                                classInput: 'cantidad_solicitada',
-                                type: 'number',
-                                placeholder: 'Cant. Modificada',
-                                value: cantidad,
-                                required: true,
-                                classDivName: '',
-                                disabled: false,
-                                conContenedor: false,
-                                conLabel: false
-                            }),
-                            cajas: cajas || cajas_calculo,
-                            costo: form.formatMoney(costo, 0),
-                            valor_total: form.formatMoney(val_total, 0),
-                            tipo_orden_detalle: tipo_orden_detalle,
-                            acciones: `
-                        <a href="#" id="orden-borrar-${codigo}"  
-                            data-table="${codigo}" 
-                            rel="tooltip" data-placement="top" 
-                            class="btn btn-simple btn-danger btn-icon borrar-celda" 
-                            title='Eliminar Producto'>
-                            <i class="material-icons">indeterminate_check_box</i>
-                        </a>`
-                        };
-                    });
-                    const renderBody = { data: dataTable, className: 'text-center orden-compra' }
-                    let body = formatTable.agregarBodyTable(renderBody);
-                    console.log(body);
-                    console.log("body");
-                    const val_convenio = parseFloat(datos.convenio?.toString().replace(',', '.')) || 0;
-                    const val_minimo = parseFloat(datos.minimo_compra?.toString().replace(',', '.')) || 0;
-                    const compra_mes = parseFloat(datos.compra_mes?.toString().replace(',', '.')) || 0;
-                    diferencia_convenio_total = (val_convenio - compra_mes - valor_total_general);
-                    diferencia_min_compra_total = (val_minimo - valor_total_general);
-                    const cumpleMinimoCompra = diferencia_min_compra_total > valor_total_general;
-                    const filaTotal = `
-                <div class="col-lg-7 col-md-7 col-sm-12"></div>
-                <div id="totales" class="col-lg-4 col-md-4 col-sm-12">
-                    <div class="card ${cumpleMinimoCompra ? 'border-danger text-danger' : 'border-success text-success'} shadow p-3 my-1 cumple">
-                        <div class="d-flex justify-content-between mb-1">
-                            <strong>Valor Total Orden:</strong>
-                            <span id="total">${form.formatMoney(Math.max(valor_total_general, 0))}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-1">
-                            <strong>Diferencia Convenio:</strong>
-                            <span id="diferencia_convenio">${form.formatMoney(Math.max(diferencia_convenio_total, 0))}</span>
-                        </div>
-                        <hr class="my-1">
-                        <div class="d-flex justify-content-between">
-                            <strong>Diferencia Min. Compra:</strong>
-                            <span id="diferencia_minimo_compra" class="${cumpleMinimoCompra ? 'font-weight-bold' : ''} cumple">${form.formatMoney(Math.max(diferencia_min_compra_total, 0))}</span>
-                        </div>
-                    </div>
-                </div>
-                `;
-                    const modal = new ModalFormat('modal-orden-compra');
-                    modal.setTitle('Orden De Compra', datos.proveedor);
-                    
-                    modal.modalFooter(esTransito ?
-                        form.agregarButton({ id: 'generar-orden-compra', text: 'Guardar', type: 'button', className: 'btn btn-primary', classDivName: '', accion: 'EDITAR', conContenedor: true, icono: "save" })
-                    : '');
-                    
-                    modal.setSize('fullscreen');
-                    modal.setClosable(false);
-                    modal.toggle('open');
-                    const adicional = { searching: true, paging: false, info: true, };
-                    $(".totales").html(filaTotal);
-                    formatTable.inicializarDataTable('#datatable-orden', adicional, body, thead, false);
-                    form.formatSelect();
-                } else {
-                    swal("Error", message, "error");
-                    return false
-                }
-            })
-            .catch((e) => {
-                console.error('Error al consultar las sugeridas de compra', e);
-                swal(msgFail);
-            });
-
-            }catch{
-                console.error('Error al procesar la orden de compra', e);
-                swal("Error", "Ocurrió un error al procesar la orden de compra", "error");
-            
-        }
-    }
-
-
-
-
-
-    ReporteOrdenCompra(controler) {
-        this.controler = 'ordenCompra/';
-        const form = new FormFormat();
-
-        const formulario = form.getFormData("#form-filtros");
-        this.formfiltros = formulario;
-        const camposAValidar = ['#fecha'];
-        const valida = form.validarCamposEspecificos(camposAValidar, '#form-filtros');
-        if (!valida.valido) return;
-        this.controlador(controler, formulario, 'POST')
-            .then((r) => {
-                const { response, message, file } = r;
-                if (response) {
-                    swal("Descargado", message, "success");
-                    window.open("/IntranetSurti/" + file, "", "width=500,height=400");
-                } else {
-                    swal("Error", message, "error");
-                    return false
-                }
-            })
-            .catch((e) => {
-                console.error('Error al generar el reporte', e);
-                swal(msgFail);
-            });
-
-    }
-
-
-
-
-    ReporteVentas(controler) {
-        this.controler = 'ordenCompra/';
-        this.controlador(controler, {}, 'POST')
-            .then((r) => {
-                const { response, message, file } = r;
-                if (response) {
-
-                    swal("Descargado", message, "success");
-                    window.open("/IntranetSurti/" + file, "", "width=500,height=400");
-
-                } else {
-                    swal("Error", message, "error");
-                    return false
-                }
-            })
-            .catch((e) => {
-                console.error('Error al generar el reporte', e);
-                swal(msgFail);
-
-            });
-
-    }
-
-
-    EnviarOrdenMail(controler, _data) {
-
-        const alerta = new SwalForm();
-        alerta.mostrarAlertaConfirmar({
-            title: '¿Estás seguro?',
-            text: `¿Quieres Enviar la orden de compra # ${_data['id']}. por correo al proveedor ${_data["proveedor"]}?`,
-            type: 'warning',
-            confirmText: 'Sí, Envíar',
-            cancelText: 'No, cancelar'
-        }).then(confirmado => {
-            if (confirmado) {
-
-
-
-
-
-                const form = new FormFormat();
-                const formulario = [
-                    form.agregarInput({ id: 'correo', name: 'correo', type: 'email', placeholder: 'Correo opcional', value: '', required: false, classDivName: 'col-lg-10 col-md-10 col-sm-12 col-md-12 mx-auto', disabled: false, conContenedor: true, conLabel: true }),
-                ];
-                let format = form.agregarForm({ action: '', id: 'form-correo', method: 'POST', elements: formulario, className: 'row', enctype: '', autocomplete: 'on' });
-
-                alerta.mostrarFormularioSwal({
-                    titulo: "Agregar Correo Destinatario",
-                    formulario: format,
-                    formId: "form-correo",
-                    form: form,
-                    confirmText : '<i class="fa-solid fa-paper-plane"></i> Enviar', 
-                    cancelText : '<i class="fa-solid fa-xmark"></i> Cancelar'
-                }).then((respuesta) => {
-                    if (!respuesta || respuesta.dismiss === 'cancel') {
-                        return;
-                    }
-                    const form = new FormFormat();
-                    const valida = form.validarFormulario("#form-correo");
-                    if (!valida.valido) {
-                        return;
-                    }
-
-                    _data.respuesta=respuesta;
-                    _data.id_compra=_data.id;
-                    this.controlador(controler, _data, 'POST')
-                        .then((r) => {
-                            const { response, message, file_base } = r;
-
-                    if (response && file_base) {
-                            // const url = `data:application/pdf;base64,${file_base}`;
-                            // // Mostrar modal con PDF
-                            // const modal = new ModalFormat('modalVisorPDF');
-                            // modal.setTitle('Vista previa del documento enviado al proveedor');
-                            // $(".modal-body").html(`
-                            //     <div class="text-center"><hr></div>
-                            //     <iframe id="iframePDF" src="${url}" width="100%" height="600px"></iframe>`);
-                            // modal.modalFooter(`<div class="text-center"><hr></div>`);
-                            // modal.setSize('fullscreen');
-                            // modal.setClosable(false);
-                            // modal.toggle('open');
-
-                            swal("¡Correcto!", message, "success");
-                            } else {
-                                swal("Error", message || "No se pudo generar el PDF", "error");
-                            }
-                        })
-                        .catch((e) => {
-                            console.error('Error al anular la orden', e);
-                            swal("Error", "Ocurrió un error en la anulación", "error");
-                        });
-                });
-
-
-
-
-
-            }
-
-        });
-       
-
-    }
+							if (isset($tablas_con_total[$nombre_detalle])) {
+								continue; 
+							}
+						}
+						$tablaVacia = true;
+
+							foreach ($rows as $fila) {
+								foreach ($fila as $valor) {
+									if ($valor !== null && $valor !== '') {
+										$tablaVacia = false;
+										break 2; // romper ambos foreach
+									}
+								}
+							}
+
+							if ($tablaVacia) {
+								continue; // NO mostrar tabla
+							}
+							// Título opcional por tabla
+							
+						$html .= "<h3 class='titulo-tabla'>TABLA: ".strtoupper($nombreTabla)."</u></h3>";
+
+						$tablasDetallado = ["cedi_norte", "cedi_sur", "credito"];
+
+						$headers = (in_array($nombreTabla, $tablasDetallado))
+							? $headersConsolidados
+							: $headersTotales;
+						$html .= "<div class='contenedor-scroll' style='max-height:500px; overflow-y:auto; overflow-x:auto;'>";
+						$html .= "<table class='reporte'><thead><tr>";
+						
+						$html .= "<thead><tr>";
+						foreach ($headers as $h) {
+							$html .= "<th>{$h}</th>";
+						}
+
+						$html .= "</tr></thead><tbody>";
+						$es_tabla_detalle = in_array($nombreTabla, $detalle_tablas);
+
+						foreach ($rows as $fila) {
+							if (!is_array($fila)) {
+								continue; 
+							}	
+							if (empty(array_filter($fila))) {
+								continue; 
+							}
+							// ----------------------------------------
+							$row_class = $es_tabla_detalle ? '' : 'fila-total';
+							$html .= "<tr class='{$row_class}'>";
+							$is_first_column_data = true;
+
+								foreach ($fila as $key => $valor) {
+									$tipo = $tipos[$key] ?? 'texto'; // por defecto texto
+									if (is_int($key)) {
+										continue; // NO imprimir claves numéricas
+									}
+
+									if (!$es_tabla_detalle && $is_first_column_data) {
+										$html .= "<td class='total-label' colspan='3'><strong>TOTAL DE SEDES</strong></td>";
+										$is_first_column_data = false;
+										continue; 
+									} elseif (!$es_tabla_detalle && in_array($key, ['Nombre Sede', 'Catalogo'])) {
+										continue;
+									}
+									$is_first_column_data = false;
+
+									switch ($tipo) {
+										case 'moneda':
+											$valor = number_format((float)$valor, 2, ',', '.');
+											$html .= "<td class='moneda'>$&nbsp;$valor</td>";
+										break;
+
+										case 'porcentaje':
+											$valor = number_format((float)$valor, 2, ',', '.');
+											$html .= "<td class='porcentaje'>{$valor}%</td>";
+											break;
+										
+										case 'numero':
+                                        $valor = number_format((int)$valor, 0, ',', '.');
+                                        $html .= "<td class='numero'>{$valor}</td>";
+                                        break;
+
+										default: // texto
+											$html .= "<td>{$valor}</td>";
+											break;		
+									}
+									
+								}
+							$html .= "</tr>";
+						}
+						if (isset($tablas_con_total[$nombreTabla])) {
+							$total_row = $tablas_con_total[$nombreTabla];
+							
+							// 1. Determinación dinámica de Colspan y Label
+							$is_consolidado_total = in_array($nombreTabla, ["cedi_norte", "cedi_sur", "credito"]);
+							
+							if ($is_consolidado_total) {
+								// Total para tablas Consolidado (2 columnas de texto al inicio: Nombre Grupo, Formador)
+								$colspan_value = 2; 
+								$total_label = "TOTAL ".strtoupper(str_replace('_', ' ', $nombreTabla));
+							} else {
+								// Total para tablas que usan headers Totales (3 columnas de texto al inicio: Sede, Nombre Sede, Catalogo)
+								$colspan_value = 3;
+								$total_label = 'TOTAL DE SEDES'; // Asumimos que es el total general, o podrías ajustarlo si el contexto lo requiere
+							}
+							
+							$html .= "<tr class='fila-total'>"; 
+
+							$column_count = 0;
+							$collapse_printed = false;
+
+							foreach ($headers as $header_key) {
+								$valor = $total_row[$header_key] ?? '';
+								$tipo = $tipos[$header_key] ?? 'texto';
+								
+								// 2. Manejo del Colapse
+								if ($column_count < $colspan_value) {
+									if (!$collapse_printed) {
+										// Imprimir la celda colapsada (solo una vez)
+										$html .= "<td class='total-label' colspan='{$colspan_value}'><strong>{$total_label}</strong></td>";
+										$collapse_printed = true;
+									}
+									// Incrementar el contador para saltar las columnas restantes cubiertas por el colspan
+									$column_count++;
+									continue; // Saltar el procesamiento de datos para esta celda
+								}
+
+								// 3. Manejo del formato de datos para el resto de columnas
+								$clase_alineacion = $tipo;
+
+								switch ($tipo) {
+									case 'moneda':
+										$valor = number_format((float)$valor, 2, ',', '.');
+                						$html .= "<td class='moneda'>$&nbsp;$valor</td>";
+									break;
+									case 'porcentaje':
+										  $valor = number_format((float)$valor, 2, ',', '.');
+										  $html .= "<td class='porcentaje'>{$valor}%</td>";
+										  break;
+										  
+									case 'numero':
+										$valor = number_format((int)$valor, 0, ',', '.');
+										$html .= "<td class='numero'>{$valor}</td>";
+										break;
+									case 'decimal':
+										$valor = number_format((float)$valor, 2, ',', '.');
+										// $html .= "<td class='{$clase_alineacion} total-data {$tipo}'>{$valor}</td>";
+										$html .= "<td class='decimal'>{$valor}</td>";
+									break;
+									
+									case 'texto':
+									default: 
+										// En la fila total, después del collapse, no deberían haber más columnas de texto
+										$html .= "<td class='numero'>{$valor}</td>";
+										break;
+								}
+								$column_count++; // Incrementar el contador de columna (para los headers de datos)
+							}
+							$html .= "</tr>";
+						}	
+						
+						$html .= "</tbody></table><br>";
+						$html .= "</div>";
+
+					}
+
+				break;
+
+
+				/* =======================================================
+				*   DETALLADO
+				* ======================================================= */
+				case "detallado":
+					$headersDetallado = [
+						'Grupo', 'Nombre Formador', 'Nombre Vendedor', 'Login Vendedor', 'Venta Bruta', 'Venta Neta', 
+						'Venta Promedio x Dia', 'Iva Venta', 'Descuento Venta', 'Drop Size', 'Devolución', 
+						'% Devolución', 'Pedidos', 'P.P', 'Días Laborados', 'Universo Clientes', 'Impactos', '% Actividad'
+					];
+
+					$headersGranTotalDetallado = [
+						'Grupo', 'Venta Bruta', 'Venta Neta', 'Venta Promedio x Dia', 'Iva Venta', 'Descuento Venta', 
+						'Drop Size', 'Devolución', '% Devolución', 'Pedidos', 'P.P', 'Días Laborados', 'Universo Clientes', 
+						'Impactos', '% Actividad'
+					];
+
+					$tipos = [
+						'Grupo' => 'texto',
+						'Nombre Formador' => 'texto',
+						'Nombre Vendedor' => 'texto',
+						'Login Vendedor' => 'texto',
+						'Venta Bruta' => 'moneda',
+						'Venta Neta' => 'moneda',
+						'Venta Promedio x Dia' => 'moneda',
+						'Iva Venta' => 'moneda',
+						'Descuento Venta' => 'moneda',
+						'Drop Size' => 'moneda',
+						'Devolución' => 'moneda',
+						'% Devolución' => 'porcentaje',
+						'Pedidos' => 'decimal',
+						'P.P' => 'decimal',
+						'Días Laborados' => 'decimal',
+						'Universo Clientes' => 'decimal',
+						'Impactos' => 'decimal',
+						'% Actividad' => 'porcentaje'
+					];
+
+					$tablaDetallado = [
+						"detallado" => $detallado,
+						"gran_total" => $granTotal
+					];
+
+					foreach ($tablaDetallado as $rows) {
+							foreach ($rows as $fila) {
+								foreach ($fila as $valor) {
+									if ($valor !== null && $valor !== '') {
+										$hayDatos = true;
+										break 3;
+									}
+								}
+							}
+						}
+
+						if (!$hayDatos) {
+							$response["message"] = "No existe información para los filtros seleccionados";
+							$response["response"] = false;
+							parent::showResponse($response, 200);
+							return;
+						}
+
+					foreach ($tablaDetallado as $nombreTabla => $rows) {
+
+						$tablaVacia = true;
+
+							foreach ($rows as $fila) {
+								foreach ($fila as $valor) {
+									if ($valor !== null && $valor !== '') {
+										$tablaVacia = false;
+										break 2; // romper ambos foreach
+									}
+								}
+							}
+
+							if ($tablaVacia) {
+								continue; // NO mostrar tabla
+							}
+	
+							// Título opcional por tabla
+						$html .= "<h3 class='titulo-tabla'>TABLA: ".strtoupper($nombreTabla)."</u></h3>";
+						// $html .= "<thead><tr>";
+
+						$nombreTablaLimpio = strtolower(trim($nombreTabla));
+						// SELECCIONAR ENCABEZADOS SEGÚN TABLA
+						$headers = ($nombreTabla === "detallado")
+							? $headersDetallado
+							: $headersGranTotalDetallado;
+						// if ($nombreTablaLimpio === "detallado") {
+						$html .= "<div class='contenedor-scroll' style='max-height:500px; overflow-y:auto; overflow-x:auto;'>";
+						// }
+
+						// INICIO TABLA
+						$html .= "<table class='reporte'>";
+
+						// ENCABEZADOS
+						$html .= "<thead><tr>";
+							foreach ($headers as $h) {
+								$html .= "<th>{$h}</th>";
+						}
+						$html .= "</tr></thead>";
+
+						
+						foreach ($rows as $fila) {
+							$html .= "<tr>";
+							foreach ($fila as $key => $valor) {
+								if (is_int($key)) {
+									continue; // NO imprimir claves numéricas
+								}
+								 $tipo = $tipos[$key] ?? 'texto'; // por defecto texto
+
+								switch ($tipo) {
+									case 'moneda':
+										$valor = number_format((float)$valor, 2, ',', '.');
+               							$html .= "<td class='moneda'>$&nbsp;$valor</td>";
+										break;
+
+									case 'decimal':
+										 $valor = number_format((float)$valor, 2, ',', '.');
+                						$html .= "<td class='decimal'>{$valor}</td>";
+										break;
+
+									case 'porcentaje':
+										  $valor = number_format((float)$valor, 2, ',', '.');
+                						$html .= "<td class='porcentaje'>{$valor}%</td>";
+										break;
+
+									default: // texto
+										$html .= "<td>{$valor}</td>";
+										break;
+								}
+								
+							}
+							$html .= "</tr>";
+						}
+
+							// FIN TABLA
+							$html .= "</tbody>";
+							$html .= "</table><br>";
+							// if ($nombreTablaLimpio === "detallado") {
+        						$html .= "</div>";
+    						// }
+					}	
+				break;	
+			}	
+
+
+			$response["response"] = true;
+			$response["data"] = $html;
+			parent::showResponse($response, 200);
+		} catch (Exception $e) {
+			$db_e = ADODB_Pear_Error();
+			if ($db_e) {
+				parent::setLog($db_e->message);
+			}
+			$response["response"] = false;
+			$response["message"] = $e->getMessage();
+			parent::showResponse($response, 200);
+		}
+	}
